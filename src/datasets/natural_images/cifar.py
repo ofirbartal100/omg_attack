@@ -1,5 +1,6 @@
 import os
 
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import datasets, transforms
@@ -13,6 +14,8 @@ class CIFAR10(Dataset):
     INPUT_SIZE = (224, 224)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
+    MEAN = [0.4914, 0.4822, 0.4465]
+    STD = [0.1953, 0.1925, 0.1942]
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
@@ -52,6 +55,19 @@ class CIFAR10(Dataset):
             Input2dSpec(input_size=CIFAR10.INPUT_SIZE, patch_size=CIFAR10.PATCH_SIZE, in_channels=CIFAR10.IN_CHANNELS),
         ]
 
+    @staticmethod
+    def normalize(imgs):
+        mean = torch.tensor(CIFAR10.MEAN, device=imgs.device)
+        std = torch.tensor(CIFAR10.STD, device=imgs.device)
+        imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
+
+    @staticmethod
+    def unnormalize(imgs):
+        mean = torch.tensor(CIFAR10.MEAN, device=imgs.device)
+        std = torch.tensor(CIFAR10.STD, device=imgs.device)
+        imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
+        return imgs
 
 class CIFAR10Small(CIFAR10):
     INPUT_SIZE = (32, 32)

@@ -3,7 +3,7 @@
 import hydra
 
 
-@hydra.main(config_path='conf', config_name='pretrain_vm')
+@hydra.main(config_path='conf', config_name='pretrain_vm_resnet18')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -20,8 +20,12 @@ def run(config):
     # Saving checkpoints and logging with wandb.
     flat_config = flatten_dict.flatten(config, reducer='dot')
     save_dir = os.path.join(config.exp.base_dir, config.exp.name)
-    wandb_logger = pl.loggers.WandbLogger(project='domain-agnostic', name=config.exp.name)
-    wandb_logger.log_hyperparams(flat_config)
+    if config.debug:
+        config.dataset.num_workers = 0
+        logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)
+    else:
+        logger = pl.loggers.WandbLogger(project='domain-agnostic', name=config.exp.name)
+    logger.log_hyperparams(flat_config)
     callbacks = [pl.callbacks.ModelCheckpoint(dirpath=save_dir, every_n_train_steps=20000, save_top_k=-1)]
 
     assert config.dataset.name in PRETRAINING_DATASETS, f'{config.dataset.name} not one of {PRETRAINING_DATASETS}.'
@@ -48,8 +52,8 @@ def run(config):
     # PyTorch Lightning Trainer.
     trainer = pl.Trainer(
         default_root_dir=save_dir,
-        logger=wandb_logger,
-        gpus=str(config.gpus),  # GPU indices
+        logger=logger,
+        gpus=config.gpus,  # GPU indices
         max_steps=config.trainer.max_steps,
         min_steps=config.trainer.max_steps,
         resume_from_checkpoint=config.trainer.resume_from_checkpoint,
@@ -59,6 +63,7 @@ def run(config):
         weights_summary=config.trainer.weights_summary,
         gradient_clip_val=config.trainer.gradient_clip_val,
         precision=config.trainer.precision,
+        accelerator=config.trainer.distributed_backend or None,
     )
 
     trainer.fit(system)

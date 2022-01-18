@@ -1,0 +1,7 @@
+# @package _group_
+name: resnet18
+kwargs:
+  resnet_type: resnet18
+  dim: 128 # dim after resnet
+  projection_head: false
+  out_dim: 128 # dim after projection_head

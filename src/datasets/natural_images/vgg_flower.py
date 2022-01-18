@@ -2,6 +2,7 @@ import os
 from collections import defaultdict
 
 import numpy as np
+import torch
 from PIL import Image
 from scipy.io import loadmat
 from torch.utils.data import Dataset
@@ -25,6 +26,8 @@ class VGGFlower(Dataset):
     INPUT_SIZE = (224, 224)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
+    MEAN = [0.4360, 0.3782, 0.2881]
+    STD = [0.2619, 0.2085, 0.2157]
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
@@ -119,6 +122,19 @@ class VGGFlower(Dataset):
             Input2dSpec(input_size=VGGFlower.INPUT_SIZE, patch_size=VGGFlower.PATCH_SIZE, in_channels=VGGFlower.IN_CHANNELS),
         ]
 
+    @staticmethod
+    def normalize(imgs):
+        mean = torch.tensor(VGGFlower.MEAN, device=imgs.device)
+        std = torch.tensor(VGGFlower.STD, device=imgs.device)
+        imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
+
+    @staticmethod
+    def unnormalize(imgs):
+        mean = torch.tensor(VGGFlower.MEAN, device=imgs.device)
+        std = torch.tensor(VGGFlower.STD, device=imgs.device)
+        imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
+        return imgs
 
 class VGGFlowerSmall(VGGFlower):
     # Dataset information.

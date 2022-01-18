@@ -3,25 +3,29 @@ from abc import abstractmethod
 
 import pytorch_lightning as pl
 import torch
+import torchvision
 from omegaconf import DictConfig
+from torch import nn
 from torch.utils.data import DataLoader, Dataset, IterableDataset
 
 from dabs.src.datasets.catalog import DATASET_DICT
-from dabs.src.models import transformer
+from dabs.src.models import transformer, resnet
 
 
 def get_model(config: DictConfig, dataset_class: Dataset):
     '''Retrieves the specified model class, given the dataset class.'''
+    spec = dataset_class.spec()
     if config.model.name == 'transformer':
         model_class = transformer.DomainAgnosticTransformer
+    elif "resnet" in config.model.name:
+        model_class = resnet.ResNetDabs
     else:
         raise ValueError(f'Encoder {config.model.name} doesn\'t exist.')
-
     # Retrieve the dataset-specific params.
-    return model_class(
-        input_specs=dataset_class.spec(),
-        **config.model.kwargs,
-    )
+    encoder_model = model_class(
+        input_specs=spec,
+        **config.model.kwargs, )
+    return encoder_model
 
 
 class BaseSystem(pl.LightningModule):

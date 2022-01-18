@@ -3,13 +3,15 @@ import torch
 import torchmetrics
 from collections import OrderedDict
 
-from dabs.src.systems.base_system import BaseSystem
-from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
 from pytorch_lightning.loggers import WandbLogger
 from torchvision.utils import make_grid
-from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
 import wandb
+
+from dabs.src.systems.base_system import BaseSystem
+
 from viewmaker.src.models.viewmaker import Viewmaker
+from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
+from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
 
 
 class ViewmakerSystem(BaseSystem):
@@ -21,9 +23,8 @@ class ViewmakerSystem(BaseSystem):
 
     def __init__(self, config):
         super().__init__(config)
-        self.ce = torch.nn.CrossEntropyLoss(reduction='none')
-        self.predictor = torch.nn.Linear(self.model.emb_dim, 2)  # Predictor: replaced or not.
-        self.accuracy = torchmetrics.Accuracy()
+        # self.predictor = torch.nn.Linear(self.model.emb_dim, 2)  # Predictor: replaced or not.
+        # self.accuracy = torchmetrics.Accuracy()
 
     def setup(self, stage):
         super().setup(self)
@@ -173,9 +174,7 @@ class ViewmakerSystem(BaseSystem):
 
     def create_viewmaker(self):
         view_model = Viewmaker(
-            dimensions=self.config.model_params.dimensions or 3,
             num_channels=self.train_dataset.IN_CHANNELS,
-            # num_channels=self.train_dataset.MEASUREMENTS_PER_EXAMPLE,
             activation=self.config.model_params.generator_activation or 'relu',
             clamp=self.config.model_params.clamp_views and True,
             frequency_domain=self.config.model_params.spectral or False,
@@ -194,10 +193,10 @@ class ViewmakerSystem(BaseSystem):
         )
         return view_model
 
-    def view(self, imgs, with_unnormalized=False, budget_multiplier=1):
+    def view(self, imgs, with_unnormalized=False):
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
-        unnormalized = self.viewmaker(imgs, budget_multiplier)
+        unnormalized = self.viewmaker(imgs)
         views = self.normalize(unnormalized)
         if with_unnormalized:
             return views, unnormalized
@@ -205,17 +204,18 @@ class ViewmakerSystem(BaseSystem):
 
     def normalize(self, imgs):
         # These numbers were computed using compute_image_dset_stats.py
-        if 'cifar' in self.config.dataset.name:
+        if hasattr(self.train_dataset, "normalize"):
+            return self.train_dataset.normalize(imgs)
+        elif 'cifar' in self.config.dataset:
             mean = torch.tensor([0.491, 0.482, 0.446], device=imgs.device)
             std = torch.tensor([0.247, 0.243, 0.261], device=imgs.device)
-        elif 'ffhq' in self.config.dataset.name:
+        elif 'ffhq' in self.config.dataset:
             mean = torch.tensor([0.5202, 0.4252, 0.3803], device=imgs.device)
             std = torch.tensor([0.2496, 0.2238, 0.2210], device=imgs.device)
-        elif 'audioMNIST' in self.config.dataset.name:
+        elif 'audioMNIST' in self.config.dataset:
             mean = torch.tensor([0.2701, 0.6490, 0.5382], device=imgs.device)
             std = torch.tensor([0.2230, 0.1348, 0.1449], device=imgs.device)
         else:
-            # raise ValueError(f'Dataset normalizer for {self.config.data_params.dataset} not implemented')
-            return imgs
+            raise ValueError(f'Dataset normalizer for {self.config.dataset} not implemented')
         imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
         return imgs
