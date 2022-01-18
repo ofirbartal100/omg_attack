@@ -6,7 +6,7 @@ import torch
 from einops import rearrange, repeat
 from torch import einsum, nn
 
-from src.models.base_model import BaseModel
+from dabs.src.models.base_model import BaseModel
 
 
 class PreNorm(nn.Module):

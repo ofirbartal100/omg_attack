@@ -5,8 +5,8 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from src.datasets.natural_images.utils import download_and_extract_archive
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.natural_images.utils import download_and_extract_archive
+from dabs.src.datasets.specs import Input2dSpec
 
 DTD_RESOURCES = {'dtd': 'https://www.robots.ox.ac.uk/~vgg/data/dtd/download/dtd-r1.0.1.tar.gz'}
 

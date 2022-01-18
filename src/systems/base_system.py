@@ -6,8 +6,8 @@ import torch
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader, Dataset, IterableDataset
 
-from src.datasets.catalog import DATASET_DICT
-from src.models import transformer
+from dabs.src.datasets.catalog import DATASET_DICT
+from dabs.src.models import transformer
 
 
 def get_model(config: DictConfig, dataset_class: Dataset):

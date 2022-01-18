@@ -3,7 +3,7 @@
 import hydra
 
 
-@hydra.main(config_path='conf', config_name='pretrain')
+@hydra.main(config_path='conf', config_name='pretrain_vm')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -11,9 +11,9 @@ def run(config):
     import flatten_dict
     import pytorch_lightning as pl
 
-    from src import online_evaluator
-    from src.datasets.catalog import MULTILABEL_DATASETS, PRETRAINING_DATASETS, UNLABELED_DATASETS
-    from src.systems import emix, shed
+    from dabs.src import online_evaluator
+    from dabs.src.datasets.catalog import MULTILABEL_DATASETS, PRETRAINING_DATASETS, UNLABELED_DATASETS
+    from dabs.src.systems import emix, shed, viewmaker
 
     pl.seed_everything(config.trainer.seed)
 
@@ -30,6 +30,8 @@ def run(config):
         system = emix.EMixSystem(config)
     elif config.algorithm == 'shed':
         system = shed.ShEDSystem(config)
+    elif config.algorithm == 'viewmaker':
+        system = viewmaker.ViewmakerSystem(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 

@@ -4,7 +4,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.specs import Input2dSpec
 
 
 class CIFAR10(Dataset):

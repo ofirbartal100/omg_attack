@@ -9,7 +9,7 @@ import torchaudio
 from torch.utils.data import Dataset
 from torchvision.transforms import Normalize
 
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.specs import Input2dSpec
 
 VOX_CELEB_MEAN = [-37.075]
 VOX_CELEB_STDEV = [19.776]

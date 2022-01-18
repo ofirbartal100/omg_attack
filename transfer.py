@@ -11,8 +11,8 @@ def run(config):
     import flatten_dict
     import pytorch_lightning as pl
 
-    from src.datasets.catalog import TRANSFER_DATASETS
-    from src.systems import transfer
+    from dabs.src.datasets.catalog import TRANSFER_DATASETS
+    from dabs.src.systems import transfer
 
     pl.seed_everything(config.trainer.seed)
 

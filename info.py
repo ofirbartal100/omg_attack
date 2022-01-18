@@ -1,6 +1,6 @@
 '''Simple script that outputs dataset information.'''
 
-from src.datasets.catalog import DATASET_DICT, PRETRAINING_DATASETS, TRANSFER_DATASETS
+from dabs.src.datasets.catalog import DATASET_DICT, PRETRAINING_DATASETS, TRANSFER_DATASETS
 
 
 def bold(string):

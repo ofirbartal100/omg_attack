@@ -9,7 +9,7 @@ import torchaudio
 from torch.utils.data import Dataset
 from torchvision.transforms import Normalize
 
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.specs import Input2dSpec
 
 AUDIOMNIST_MEAN = [-90.293]
 AUDIOMNIST_STDEV = [11.799]

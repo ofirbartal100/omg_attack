@@ -1,7 +1,7 @@
 import os
 
-from src.datasets.specs import InputTokensSpec
-from src.datasets.text.utils import EnglishHuggingFaceDataset
+from dabs.src.datasets.specs import InputTokensSpec
+from dabs.src.datasets.text.utils import EnglishHuggingFaceDataset
 
 
 class WikiText103(EnglishHuggingFaceDataset):

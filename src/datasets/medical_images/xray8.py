@@ -9,7 +9,7 @@ from torchvision import transforms
 from torchvision.datasets.utils import download_and_extract_archive, download_url
 from torchvision.datasets.vision import VisionDataset
 
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.specs import Input2dSpec
 
 CHEST_XRAY_8_LINKS = [
     'https://nihcc.box.com/shared/static/vfk49d74nhbxq3nqjg0900w5nvkorp5c.gz',

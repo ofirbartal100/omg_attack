@@ -9,7 +9,7 @@ from torchvision import transforms
 from torchvision.datasets.utils import extract_archive
 from torchvision.datasets.vision import VisionDataset
 
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.specs import Input2dSpec
 
 # From DATASET_ROOT/chexpert/CheXpert-v1.0-small/valid.csv
 CHEXPERT_LABELS = {

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Sequence
 import torch
 import torch.nn as nn
 
-from src.models.embedding_modules import Input1dToEmbeddings, Input2dToEmbeddings, Input3dToEmbeddings, InputTokensToEmbeddings
+from dabs.src.models.embedding_modules import Input1dToEmbeddings, Input2dToEmbeddings, Input3dToEmbeddings, InputTokensToEmbeddings
 
 
 class BaseModel(ABC, nn.Module):

@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.systems.base_system import BaseSystem
+from dabs.src.systems.base_system import BaseSystem
 
 
 class EMixSystem(BaseSystem):

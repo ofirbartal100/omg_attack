@@ -4,7 +4,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.specs import Input2dSpec
 
 CUBIRDS_RESOURCES = {
     'cu_birds':

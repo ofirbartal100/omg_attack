@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 from torchaudio.datasets import LIBRISPEECH
 from torchvision.transforms import Normalize
 
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.specs import Input2dSpec
 
 BAD_LIBRISPEECH_INDICES = [60150]
 LIBRISPEECH_MEAN = [-22.924]

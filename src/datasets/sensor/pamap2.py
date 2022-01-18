@@ -9,7 +9,7 @@ import torch.utils.data as data
 from torchaudio.transforms import Spectrogram
 from torchvision.datasets.utils import download_and_extract_archive
 
-from src.datasets.specs import Input1dSpec, Input2dSpec
+from dabs.src.datasets.specs import Input1dSpec, Input2dSpec
 
 ACTIVITY_LABELS = [
     1,  # lying
@@ -145,6 +145,8 @@ class PAMAP2(data.Dataset):
             activity_id = np.random.randint(len(ACTIVITY_LABELS))
             df = self.subject_data[subject_id]
             activity_data = df[df['activity_id'] == ACTIVITY_LABELS[activity_id]].to_numpy()
+            means = ((df[df['activity_id'] == ACTIVITY_LABELS[activity_id]]).iloc[:,2:]).mean()
+            stds = ((df[df['activity_id'] == ACTIVITY_LABELS[activity_id]]).iloc[:,2:]).std()
             if len(activity_data) > self.MEASUREMENTS_PER_EXAMPLE:
                 break
         start_idx = np.random.randint(len(activity_data) - self.MEASUREMENTS_PER_EXAMPLE)
@@ -152,7 +154,9 @@ class PAMAP2(data.Dataset):
         # Get frame and also truncate off label and timestamp.
         # [self.MEASUREMENTS_PER_EXAMPLE, 52]
         measurements = activity_data[start_idx:start_idx + self.MEASUREMENTS_PER_EXAMPLE, 2:]
-        return measurements.astype(np.float32), activity_id
+        normalized_measurements = (measurements-means.to_numpy())/(stds.to_numpy()+1e-5)
+        return normalized_measurements.astype(np.float32), activity_id
+        # return measurements.astype(np.float32).T, activity_id  # (C , D) , activity_id
 
     def __getitem__(self, index):
         measurements, label = self.load_measurements()

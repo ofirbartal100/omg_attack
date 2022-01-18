@@ -7,8 +7,8 @@ from scipy.io import loadmat
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from src.datasets.natural_images.utils import download_and_extract_archive
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.natural_images.utils import download_and_extract_archive
+from dabs.src.datasets.specs import Input2dSpec
 
 VGGFLOWER_RESOURCES = {
     'vggflower':

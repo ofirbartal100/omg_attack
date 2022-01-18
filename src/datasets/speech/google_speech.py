@@ -8,8 +8,8 @@ import torchaudio
 from torch.utils.data import Dataset
 from torchvision.transforms import Normalize
 
-from src.datasets.specs import Input2dSpec
-from src.datasets.speech.utils import download_and_extract_archive
+from dabs.src.datasets.specs import Input2dSpec
+from dabs.src.datasets.speech.utils import download_and_extract_archive
 
 GOOGLESPEECH_RESOURCES = {'google_speech': 'http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz'}
 GOOGLESPEECH_MEAN = [-46.847]

@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
-from src.datasets.specs import InputTokensSpec
+from dabs.src.datasets.specs import InputTokensSpec
 
 
 class PawsX(Dataset):

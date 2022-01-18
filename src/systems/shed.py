@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchmetrics
 
-from src.systems.base_system import BaseSystem
+from dabs.src.systems.base_system import BaseSystem
 
 FRAC_TO_PERMUTE = 0.15
 

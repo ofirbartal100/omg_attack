@@ -8,7 +8,7 @@ from torchvision import transforms
 from torchvision.datasets.utils import download_and_extract_archive
 from transformers import AutoTokenizer
 
-from src.datasets.specs import Input2dSpec, InputTokensSpec
+from dabs.src.datasets.specs import Input2dSpec, InputTokensSpec
 
 
 class MSCOCO(Dataset):

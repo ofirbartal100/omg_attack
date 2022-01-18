@@ -1,9 +1,9 @@
-from src.datasets.captioned_images import mscoco, vqa
-from src.datasets.medical_images import chexpert, xray8
-from src.datasets.natural_images import aircraft, cifar, cu_birds, dtd, imagenet, traffic_sign, vgg_flower
-from src.datasets.sensor import pamap2
-from src.datasets.speech import audio_mnist, fluent_speech, google_speech, librispeech, voxceleb1
-from src.datasets.text import glue, mc4, pawsx, wikitext
+from dabs.src.datasets.captioned_images import mscoco, vqa
+from dabs.src.datasets.medical_images import chexpert, xray8
+from dabs.src.datasets.natural_images import aircraft, cifar, cu_birds, dtd, imagenet, traffic_sign, vgg_flower
+from dabs.src.datasets.sensor import pamap2
+from dabs.src.datasets.speech import audio_mnist, fluent_speech, google_speech, librispeech, voxceleb1
+from dabs.src.datasets.text import glue, mc4, pawsx, wikitext
 
 DATASET_DICT = {
     # Captioned images.

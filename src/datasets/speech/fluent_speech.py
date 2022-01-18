@@ -9,8 +9,8 @@ import torchaudio
 from torch.utils.data import Dataset
 from torchvision.transforms import Normalize
 
-from src.datasets.specs import Input2dSpec
-from src.datasets.speech.utils import download_and_extract_archive
+from dabs.src.datasets.specs import Input2dSpec
+from dabs.src.datasets.speech.utils import download_and_extract_archive
 
 FLUENTSPEECH_RESOURCES = {'fluent': 'http://fluent.ai:2052/jf8398hf30f0381738rucj3828chfdnchs.tar.gz'}
 FLUENTSPEECH_MEAN = [-31.809]

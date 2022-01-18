@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from torchvision.datasets.utils import download_and_extract_archive
 
-from src.datasets.specs import Input2dSpec
+from dabs.src.datasets.specs import Input2dSpec
 
 AIRCRAFT_RESOURCES = {
     'aircraft': 'http://www.robots.ox.ac.uk/~vgg/data/fgvc-aircraft/archives/fgvc-aircraft-2013b.tar.gz',

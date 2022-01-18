@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchmetrics
 
-from src.systems.base_system import BaseSystem
+from dabs.src.systems.base_system import BaseSystem
 
 
 class BCEWithLogitsLoss(nn.BCEWithLogitsLoss):
