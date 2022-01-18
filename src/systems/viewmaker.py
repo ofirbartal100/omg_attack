@@ -176,7 +176,7 @@ class ViewmakerSystem(BaseSystem):
         view_model = Viewmaker(
             num_channels=self.train_dataset.IN_CHANNELS,
             activation=self.config.model_params.generator_activation or 'relu',
-            clamp=self.config.model_params.clamp_views and True,
+            clamp=self.config.model_params.clamp_views or True,
             frequency_domain=self.config.model_params.spectral or False,
             downsample_to=self.config.model_params.viewmaker_downsample or False,
             num_res_blocks=self.config.model_params.num_res_blocks or 5,

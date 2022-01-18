@@ -43,7 +43,7 @@ optim_params:
 
 model_params: 
   dimensions: 3
-  out_dim: 100
+  out_dim: 128
   resnet: true
   resnet_version: resnet18
   resnet_small: true
@@ -57,7 +57,7 @@ model_params:
   additive_budget: 0.05
   tps_budget: 0.05
   budget_aware: false
-  clamp_views: false
+  clamp_views: true
   generator_activation: relu
   spectral: False
   viewmaker_downsample: False

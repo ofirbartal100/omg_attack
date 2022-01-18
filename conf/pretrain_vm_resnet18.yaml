@@ -1,13 +1,13 @@
 algorithm: viewmaker
 data_root: /disk2/ofirb/dabs/data
-gpus: [0]
+gpus: [5]
 system: ViewmakerSystem
 
-debug: true
+debug: false
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: vm
+  name: vm_orig_cifar10 - resnet18
 
 trainer:
   weights_summary: top
@@ -31,16 +31,16 @@ defaults:
   - model: resnet18
 
 dataset:
-  batch_size: 64
+  batch_size: 128
 
-optim_params: 
-  batch_size: 64
+optim_params:
+  batch_size: 128 # delete
   learning_rate: 0.03
   momentum: 0.9
   weight_decay: 1e-4
-  validate_freq: 1
-  patience: 1000
-  num_view_update: 1
+  validate_freq: 1  # delete
+  patience: 1000  # delete
+  num_view_update: 1  # delete
   viewmaker_optim: adam
   viewmaker_learning_rate: 0.001
 
@@ -60,7 +60,7 @@ model_params:
   additive_budget: 0.05
   tps_budget: 0.05
   budget_aware: false
-  clamp_views: false
+  clamp_views: true
   generator_activation: relu
   spectral: False
   viewmaker_downsample: False
