@@ -21,7 +21,7 @@ class LibriSpeech(Dataset):
     ALL_TRAIN_NUM_CLASSES = 2338
     DEV_CLEAN_NUM_CLASSES = 40
 
-    INPUT_SIZE = (224, 224)
+    INPUT_SIZE = (112, 112)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 1
 
@@ -164,6 +164,15 @@ class LibriSpeech(Dataset):
             )
         ]
 
+    @staticmethod
+    def normalize(imgs):
+        return imgs
+
+    @staticmethod
+    def unnormalize(spectrogram):
+        #TODO: fix this to really unnormalize
+        return  spectrogram
+
 
 class LibriSpeechTransfer(Dataset):
     '''
@@ -173,7 +182,7 @@ class LibriSpeechTransfer(Dataset):
     MAX_LENGTH = 150526
 
     NUM_CLASSES = 40
-    INPUT_SIZE = (224, 224)
+    INPUT_SIZE = (112, 112)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 1
 
@@ -283,3 +292,12 @@ class LibriSpeechTransfer(Dataset):
                 in_channels=LibriSpeech.IN_CHANNELS,
             )
         ]
+
+    @staticmethod
+    def normalize(imgs):
+        return imgs
+
+    @staticmethod
+    def unnormalize(spectrogram):
+        #TODO: fix this to really unnormalize
+        return  spectrogram

@@ -68,6 +68,8 @@ class VQA(VisionDataset):
     INPUT_SIZE = (224, 224)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
+    MEAN = [0.4215, 0.4073, 0.3899]
+    STD = [0.2341, 0.2262, 0.2190]
 
     SEQ_LEN = 32
     VOCAB_SIZE = 30522  # AutoTokenizer.from_pretrained('bert-base-uncased').vocab_size

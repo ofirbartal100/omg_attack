@@ -1,0 +1,1 @@
+from .pamap2 import PAMAP2, SpectrogramPAMAP2

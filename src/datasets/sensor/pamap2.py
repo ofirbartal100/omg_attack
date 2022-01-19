@@ -314,3 +314,11 @@ class SpectrogramPAMAP2(data.Dataset):
                 in_channels=SpectrogramPAMAP2.IN_CHANNELS
             ),
         ]
+
+    @staticmethod
+    def normalize(imgs):
+        return imgs
+
+    @staticmethod
+    def unnormalize(spectrogram):
+        return  spectrogram * FEATURE_STDS.reshape(-1, 1, 1) + FEATURE_MEANS.reshape(-1, 1, 1)

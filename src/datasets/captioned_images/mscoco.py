@@ -183,7 +183,7 @@ class MSCOCO(Dataset):
         if self.TRANSFORMS:
             image = self.TRANSFORMS(image)
 
-        return (index, image.float(), caption.long(), label)
+        return index, image.float(), caption.long(), label
 
     @staticmethod
     def num_classes():

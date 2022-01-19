@@ -60,7 +60,9 @@ class CheXpert(VisionDataset):
     NUM_CLASSES = 5  # 14 total, but we select 5: len(self.CHEXPERT_LABELS_IDX)
     INPUT_SIZE = (224, 224)
     PATCH_SIZE = (16, 16)
-    IN_CHANNELS = 3
+    IN_CHANNELS = 1
+    MEAN = [0.5030]
+    STD = [0.2887]
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         self.root = os.path.join(base_root, 'medical_images', 'chexpert')
@@ -71,7 +73,8 @@ class CheXpert(VisionDataset):
 
     def find_data(self):
         os.makedirs(self.root, exist_ok=True)
-        components = list(map(lambda x: os.path.join(self.root, 'CheXpert-v1.0' + x), ['', '-small', '.zip', '-small.zip']))
+        components = list(
+            map(lambda x: os.path.join(self.root, 'CheXpert-v1.0' + x), ['', '-small', '.zip', '-small.zip']))
         # if no data is present, prompt the user to download it
         if not any_exist(components):
             raise RuntimeError(
@@ -121,10 +124,25 @@ class CheXpert(VisionDataset):
 
     def __getitem__(self, index: int) -> Any:
         fname = self.fnames[index]
-        image = Image.open(os.path.join(self.root, fname)).convert('RGB')
+        image = Image.open(os.path.join(self.root, fname))
         image = self.TRANSFORMS(image)
         label = torch.tensor(self.labels[index][self.CHEXPERT_LABELS_IDX]).long()
         return index, image.float(), label
+
+    @staticmethod
+    def normalize(imgs):
+        mean = torch.tensor(CheXpert.MEAN, device=imgs.device)
+        std = torch.tensor(CheXpert.STD, device=imgs.device)
+        imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
+
+    @staticmethod
+    def unnormalize(imgs):
+        mean = torch.tensor(CheXpert.MEAN, device=imgs.device)
+        std = torch.tensor(CheXpert.STD, device=imgs.device)
+        imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
+        return imgs
+
 
     @staticmethod
     def num_classes():
@@ -133,7 +151,8 @@ class CheXpert(VisionDataset):
     @staticmethod
     def spec():
         return [
-            Input2dSpec(input_size=CheXpert.INPUT_SIZE, patch_size=CheXpert.PATCH_SIZE, in_channels=CheXpert.IN_CHANNELS),
+            Input2dSpec(input_size=CheXpert.INPUT_SIZE, patch_size=CheXpert.PATCH_SIZE,
+                        in_channels=CheXpert.IN_CHANNELS),
         ]
 
 
