@@ -1,9 +1,11 @@
 '''Main transfer script.'''
 
 import hydra
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="5"
 
 
-@hydra.main(config_path='conf', config_name='transfer')
+@hydra.main(config_path='conf', config_name='transfer_vm')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -13,6 +15,7 @@ def run(config):
 
     from dabs.src.datasets.catalog import TRANSFER_DATASETS
     from dabs.src.systems import transfer
+    from dabs.src.systems import transfer_viewmaker
 
     pl.seed_everything(config.trainer.seed)
 
@@ -23,7 +26,7 @@ def run(config):
     wandb_logger.log_hyperparams(flat_config)
     ckpt_callback = pl.callbacks.ModelCheckpoint(dirpath=save_dir)
 
-    assert config.dataset.name in TRANSFER_DATASETS, f'{config.dataset.name} not one of {TRANSFER_DATASETS}.'
+    # assert config.dataset.name in TRANSFER_DATASETS, f'{config.dataset.name} not one of {TRANSFER_DATASETS}.'
 
     # PyTorch Lightning Trainer.
     trainer = pl.Trainer(
@@ -39,7 +42,8 @@ def run(config):
         precision=config.trainer.precision
     )
 
-    system = transfer.TransferSystem(config)
+    # system = transfer.TransferSystem(config)
+    system = transfer_viewmaker.ViewmakerTransferSystem(config)
     trainer.fit(system)
 
 

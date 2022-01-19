@@ -2,10 +2,11 @@ algorithm: viewmaker
 data_root: /disk2/ofirb/dabs/data
 gpus: 1
 system: ViewmakerSystem
+debug: true
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: vm_traffic_sign_small
+  name: vm_cifar10
 
 trainer:
   weights_summary: top
@@ -16,6 +17,7 @@ trainer:
   precision: 32  # set to 16 for O1 mixed precision, 32 for O0 full precision
   max_steps: 100_000
   gradient_clip_val: 0
+  distributed_backend: dp
 
 optim:
   name: adam
@@ -24,12 +26,12 @@ optim:
   momentum: 0.9  # only used for momentum-based optimizers
 
 defaults:
-  # - dataset: cifar10_small
+  - dataset: cifar10_small
   # - dataset: vgg_flower_small
   # - dataset: aircraft_small
   # - dataset: cu_birds_small
   # - dataset: dtd_small
-  - dataset: traffic_sign_small
+  # - dataset: traffic_sign_small
   - model: transformer
 
 dataset:
@@ -59,10 +61,10 @@ model_params:
   multiplicative: 0
   tps: 0
   multiplicative_budget: 0.05
-  additive_budget: 0.05
+  additive_budget: 0.25
   tps_budget: 0.05
   budget_aware: false
-  clamp_views: true
+  clamp_views: false
   generator_activation: relu
   spectral: False
   viewmaker_downsample: False
