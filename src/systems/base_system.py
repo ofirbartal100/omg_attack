@@ -59,7 +59,7 @@ class BaseSystem(pl.LightningModule):
         self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True)
         self.val_dataset = self.dataset(base_root=self.config.data_root, download=True, train=False)
         try:
-            print(f'{len(self.train_dataset)} train examples, {len(self.val_dataset)} val examples')
+            print('\033[94m' + f'{len(self.train_dataset)} train examples, {len(self.val_dataset)} val examples' + '\033[0m')
         except TypeError:
             print('Iterable/streaming dataset- undetermined length.')
 

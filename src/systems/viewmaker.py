@@ -105,7 +105,7 @@ class ViewmakerSystem(BaseSystem):
             super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu, using_native_amp, using_lbfgs)
         # freeze_after_epoch = self.config.optim_params.viewmaker_freeze_epoch and self.current_epoch > self.config.optim_params.viewmaker_freeze_epoch
         freeze_after_epoch = False
-        
+
         if optimizer_idx == 1:
             if freeze_after_epoch:
                 # freeze viewmaker after a certain number of epochs

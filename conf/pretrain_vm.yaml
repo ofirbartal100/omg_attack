@@ -5,7 +5,7 @@ system: ViewmakerSystem
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: vm
+  name: vm_traffic_sign_small
 
 trainer:
   weights_summary: top
@@ -24,7 +24,12 @@ optim:
   momentum: 0.9  # only used for momentum-based optimizers
 
 defaults:
-  - dataset: cifar10_small
+  # - dataset: cifar10_small
+  # - dataset: vgg_flower_small
+  # - dataset: aircraft_small
+  # - dataset: cu_birds_small
+  # - dataset: dtd_small
+  - dataset: traffic_sign_small
   - model: transformer
 
 dataset:

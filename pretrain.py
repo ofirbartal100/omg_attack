@@ -1,5 +1,6 @@
 '''Main pretraining script.'''
-
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 import hydra
 
 
@@ -24,7 +25,7 @@ def run(config):
     wandb_logger.log_hyperparams(flat_config)
     callbacks = [pl.callbacks.ModelCheckpoint(dirpath=save_dir, every_n_train_steps=20000, save_top_k=-1)]
 
-    assert config.dataset.name in PRETRAINING_DATASETS, f'{config.dataset.name} not one of {PRETRAINING_DATASETS}.'
+    # assert config.dataset.name in PRETRAINING_DATASETS, f'{config.dataset.name} not one of {PRETRAINING_DATASETS}.'
 
     if config.algorithm == 'emix':
         system = emix.EMixSystem(config)
