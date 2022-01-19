@@ -20,6 +20,8 @@ def run(config):
     # Saving checkpoints and logging with wandb.
     flat_config = flatten_dict.flatten(config, reducer='dot')
     save_dir = os.path.join(config.exp.base_dir, config.exp.name)
+    if config.get("num_workers") is not None:
+        config.dataset.num_workers = config.num_workers
     if config.debug:
         config.dataset.num_workers = 0
         logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)

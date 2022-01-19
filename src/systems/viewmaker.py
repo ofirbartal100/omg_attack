@@ -3,6 +3,8 @@ import torch
 import torchmetrics
 from collections import OrderedDict
 
+from torchvision.transforms.functional import resize
+from torchvision.transforms import InterpolationMode
 from pytorch_lightning.loggers import WandbLogger
 from torchvision.utils import make_grid
 import wandb
@@ -53,13 +55,7 @@ class ViewmakerSystem(BaseSystem):
     def training_step(self, batch, batch_idx, optimizer_idx):
         emb_dict = self.ssl_forward(batch)
         encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = self.objective(emb_dict)
-
-        # assuming they fixed taht in new versions
-        # # Handle Tensor (dp) and int (ddp) cases
-        if optimizer_idx.__class__ == int or optimizer_idx.dim() == 0:
-            optimizer_idx = optimizer_idx
-        else:
-            optimizer_idx = optimizer_idx[0]
+        emb_dict['optimizer_idx'] = torch.tensor(optimizer_idx, device=self.device)
 
         if optimizer_idx == 0:
             metrics = {'encoder_loss': encoder_loss, "train_acc": encoder_acc, "positive_sim": positive_sim, "negative_sim": negative_sim}
@@ -67,7 +63,13 @@ class ViewmakerSystem(BaseSystem):
         elif optimizer_idx == 1:
             metrics = {'view_maker_loss': view_maker_loss}
             loss = view_maker_loss
+        return [loss, emb_dict, metrics]
 
+    def training_step_end(self, train_step_outputs):
+        loss, emb_dict, metrics = train_step_outputs
+        # reduce distributed results
+        loss = loss.mean()
+        metrics = {k: v.mean() for k, v in metrics.items()}
         self.wandb_logging(emb_dict)
         self.log_dict(metrics)
         return loss
@@ -152,6 +154,15 @@ class ViewmakerSystem(BaseSystem):
         if isinstance(self.logger, WandbLogger):
             logging_steps = 200
 
+        # check optimizer index to log images only once
+        # # Handle Tensor (dp) and int (ddp) cases
+        if emb_dict['optimizer_idx'].__class__ == int or emb_dict['optimizer_idx'].dim() == 0:
+            optimizer_idx = emb_dict['optimizer_idx']
+        else:
+            optimizer_idx = emb_dict['optimizer_idx'][0]
+        if optimizer_idx>0:
+            return
+
         if self.global_step % logging_steps == 0:
             amount_images = 10
             img = emb_dict['originals']
@@ -160,7 +171,7 @@ class ViewmakerSystem(BaseSystem):
 
             diff_heatmap = heatmap_of_view_effect(img[:amount_images], unnormalized_view1[:amount_images])
             diff_heatmap2 = heatmap_of_view_effect(img[:amount_images], unnormalized_view2[:amount_images])
-            if img.size(1) >3:
+            if img.size(1) > 3:
                 img = img.mean(1, keepdim=True)
                 unnormalized_view1 = unnormalized_view1.mean(1, keepdim=True)
                 unnormalized_view2 = unnormalized_view2.mean(1, keepdim=True)
@@ -169,7 +180,7 @@ class ViewmakerSystem(BaseSystem):
             cat = torch.cat([img[:amount_images], unnormalized_view1[:amount_images], unnormalized_view2[:amount_images],
                             diff_heatmap, diff_heatmap2, (diff_heatmap-diff_heatmap2).abs()])
             grid = make_grid(cat, nrow=amount_images)
-            grid = torch.clamp(grid, 0, 1.0)
+            grid = resize(torch.clamp(grid, 0, 1.0), (560, 1120), InterpolationMode.NEAREST)
             if isinstance(self.logger, WandbLogger):
                 wandb.log({
                     "original_vs_views": wandb.Image(grid, caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
