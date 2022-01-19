@@ -1,18 +1,18 @@
 algorithm: viewmaker
 data_root: /disk2/ofirb/dabs/data
-gpus: [5]
+gpus: [0,2,3]
 system: ViewmakerSystem
 
 debug: false
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: vm_orig_cifar10 - resnet18
+  name: vm_orig_librispeech_112
 
 trainer:
   weights_summary: top
   seed: 0
-  val_check_interval: 1.0
+  val_check_interval: 400
   limit_val_batches: 1.0
   resume_from_checkpoint: null
   precision: 32  # set to 16 for O1 mixed precision, 32 for O0 full precision
@@ -27,30 +27,21 @@ optim:
   momentum: 0.9  # only used for momentum-based optimizers
 
 defaults:
-  - dataset: cifar10_small
-  - model: resnet18
+  - dataset: librispeech
+  - model: resnet50
 
 dataset:
   batch_size: 128
 
 optim_params:
-  batch_size: 128 # delete
   learning_rate: 0.03
   momentum: 0.9
   weight_decay: 1e-4
-  validate_freq: 1  # delete
-  patience: 1000  # delete
-  num_view_update: 1  # delete
   viewmaker_optim: adam
   viewmaker_learning_rate: 0.001
 
 model_params: 
   dimensions: 3
-  out_dim: 100
-  resnet: true
-  resnet_version: resnet18
-  resnet_small: true
-  projection_head: false
   noise_dim: 100
   num_res_blocks: 3
   additive: 1

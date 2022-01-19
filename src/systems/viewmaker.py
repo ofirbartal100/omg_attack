@@ -160,6 +160,12 @@ class ViewmakerSystem(BaseSystem):
 
             diff_heatmap = heatmap_of_view_effect(img[:amount_images], unnormalized_view1[:amount_images])
             diff_heatmap2 = heatmap_of_view_effect(img[:amount_images], unnormalized_view2[:amount_images])
+            if img.size(1) >3:
+                img = img.mean(1, keepdim=True)
+                unnormalized_view1 = unnormalized_view1.mean(1, keepdim=True)
+                unnormalized_view2 = unnormalized_view2.mean(1, keepdim=True)
+                diff_heatmap = diff_heatmap.mean(1, keepdim=True)
+                diff_heatmap2 = diff_heatmap2.mean(1, keepdim=True)
             cat = torch.cat([img[:amount_images], unnormalized_view1[:amount_images], unnormalized_view2[:amount_images],
                             diff_heatmap, diff_heatmap2, (diff_heatmap-diff_heatmap2).abs()])
             grid = make_grid(cat, nrow=amount_images)

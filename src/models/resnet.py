@@ -34,6 +34,7 @@ class ResNetDabs(BaseModel):
             # ResNet variant for smaller inputs (e.g. CIFAR-10).
             model_class = resnet_small.ResNet18
             encoder_model = model_class(out_dim,
+                                        num_channels=input_specs[0].in_channels,
                                         input_size=input_specs[0].input_size[0])
         else:
             model_class = getattr(torchvision.models, resnet_type)
