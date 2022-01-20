@@ -13,7 +13,6 @@ from viewmaker.src.models.viewmaker import Viewmaker
 from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
 from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
 
-
 class ViewmakerSystem(BaseSystem):
     '''System for Shuffled Embedding Detection.
 
@@ -23,13 +22,11 @@ class ViewmakerSystem(BaseSystem):
 
     def __init__(self, config):
         super().__init__(config)
-        # self.predictor = torch.nn.Linear(self.model.emb_dim, 2)  # Predictor: replaced or not.
-        # self.accuracy = torchmetrics.Accuracy()
+
 
     def setup(self, stage):
         super().setup(self)
         self.viewmaker = self.create_viewmaker()
-
 
     def forward(self, x, prehead=False):
         return self.model.forward(x, prehead=prehead)
@@ -43,7 +40,7 @@ class ViewmakerSystem(BaseSystem):
             'indices': indices,
             'view1_embs': self.model.forward([view1]),
             'view2_embs': self.model.forward([view2]),
-            'orig_embs': self.model.forward([view2]),
+            'orig_embs': self.model.forward([self.normalize(img)]),
             'originals': img,
             'views1': unnormalized_view1,
             'views2': unnormalized_view2
@@ -116,7 +113,7 @@ class ViewmakerSystem(BaseSystem):
                 super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu, using_native_amp, using_lbfgs)
 
     def configure_optimizers(self):
-        params = [p for p in self.parameters() if p.requires_grad]
+        params = [p for p in self.model.parameters() if p.requires_grad]
         if self.config.optim.name == 'adam':
             encoder_optim = torch.optim.AdamW(params, lr=self.config.optim.lr, weight_decay=self.config.optim.weight_decay)
         elif self.config.optim.name == 'sgd':
@@ -182,7 +179,7 @@ class ViewmakerSystem(BaseSystem):
         view_model = Viewmaker(
             num_channels=self.train_dataset.IN_CHANNELS,
             activation=self.config.model_params.generator_activation or 'relu',
-            clamp=self.config.model_params.clamp_views or True,
+            clamp=self.config.model_params.clamp_views or False,
             frequency_domain=self.config.model_params.spectral or False,
             downsample_to=self.config.model_params.viewmaker_downsample or False,
             num_res_blocks=self.config.model_params.num_res_blocks or 5,
@@ -202,6 +199,8 @@ class ViewmakerSystem(BaseSystem):
     def view(self, imgs, with_unnormalized=False):
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
+        # views = self.viewmaker(self.normalize(imgs))
+        # unnormalized = self.unnormalize(views)
         unnormalized = self.viewmaker(imgs)
         views = self.normalize(unnormalized)
         if with_unnormalized:
@@ -224,4 +223,22 @@ class ViewmakerSystem(BaseSystem):
         else:
             raise ValueError(f'Dataset normalizer for {self.config.dataset} not implemented')
         imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
+
+    def unnormalize(self, imgs):
+        # These numbers were computed using compute_image_dset_stats.py
+        if hasattr(self.train_dataset, "unnormalize"):
+            return self.train_dataset.unnormalize(imgs)
+        elif 'cifar' in self.config.dataset:
+            mean = torch.tensor([0.491, 0.482, 0.446], device=imgs.device)
+            std = torch.tensor([0.247, 0.243, 0.261], device=imgs.device)
+        elif 'ffhq' in self.config.dataset:
+            mean = torch.tensor([0.5202, 0.4252, 0.3803], device=imgs.device)
+            std = torch.tensor([0.2496, 0.2238, 0.2210], device=imgs.device)
+        elif 'audioMNIST' in self.config.dataset:
+            mean = torch.tensor([0.2701, 0.6490, 0.5382], device=imgs.device)
+            std = torch.tensor([0.2230, 0.1348, 0.1449], device=imgs.device)
+        else:
+            raise ValueError(f'Dataset normalizer for {self.config.dataset} not implemented')
+        imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
         return imgs
