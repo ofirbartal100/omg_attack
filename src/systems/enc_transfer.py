@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchmetrics
+import wandb
 
 from dabs.src.systems.base_system import BaseSystem
 
@@ -53,7 +54,8 @@ class TransferSystem(BaseSystem):
 
         # Restore checkpoint if provided.
         if config.ckpt is not None:
-            self.load_state_dict(torch.load(config.ckpt)['state_dict'], strict=False)
+            model_weight_dict = self.get_model_weights(config.ckpt)
+            self.model.load_state_dict(model_weight_dict)
         for param in self.model.parameters():
             param.requires_grad = False
 
@@ -72,13 +74,41 @@ class TransferSystem(BaseSystem):
         )
         self.is_auroc = (config.dataset.metric == 'auroc')  # this metric should only be computed per epoch
 
+    def get_model_weights(self, ckpt):
+        system_weights = torch.load(ckpt)['state_dict']
+        model_weights = {}
+        for name, weight in system_weights.items():
+            if "model" in name:
+                model_weight_name = name.replace("model.", "")
+                model_weights[model_weight_name] = weight
+        return model_weights
+
     def objective(self, *args, **kwargs):
         return self.loss_fn(*args, **kwargs)
 
     def forward(self, batch):
+        batch[0] = self.normalize(batch[0])
         embs = self.model.forward(batch, prehead=True)
         preds = self.linear(embs)
         return preds
+
+    def normalize(self, imgs):
+        # These numbers were computed using compute_image_dset_stats.py
+        if hasattr(self.train_dataset, "normalize"):
+            return self.train_dataset.normalize(imgs)
+        elif 'cifar' in self.config.dataset:
+            mean = torch.tensor([0.491, 0.482, 0.446], device=imgs.device)
+            std = torch.tensor([0.247, 0.243, 0.261], device=imgs.device)
+        elif 'ffhq' in self.config.dataset:
+            mean = torch.tensor([0.5202, 0.4252, 0.3803], device=imgs.device)
+            std = torch.tensor([0.2496, 0.2238, 0.2210], device=imgs.device)
+        elif 'audioMNIST' in self.config.dataset:
+            mean = torch.tensor([0.2701, 0.6490, 0.5382], device=imgs.device)
+            std = torch.tensor([0.2230, 0.1348, 0.1449], device=imgs.device)
+        else:
+            raise ValueError(f'Dataset normalizer for {self.config.dataset} not implemented')
+        imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
 
     def training_step(self, batch, batch_idx):
         batch, labels = batch[1:-1], batch[-1]
@@ -99,14 +129,16 @@ class TransferSystem(BaseSystem):
     def on_train_epoch_end(self):
         '''Log auroc at end of epoch here to guarantee presence of every class.'''
         if self.is_auroc:
+            metric = self.metric_fn.compute()
             self.log(
                 'transfer/train_metric',
-                self.metric_fn.compute(),
+                metric,
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
                 sync_dist=True,
             )
+            wandb.log({'transfer/train_metric': metric})
             self.metric_fn.reset()
 
     def validation_step(self, batch, batch_idx):
@@ -122,19 +154,23 @@ class TransferSystem(BaseSystem):
         else:
             metric = self.metric_fn(self.post_fn(preds.float()), labels)
             self.log('transfer/val_metric', metric, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        wandb.log({'transfer/val_metric': metric, 'transfer/val_loss': loss})
+
 
     def on_validation_epoch_end(self):
         '''Log auroc at end of epoch here to guarantee presence of every class.'''
         if self.is_auroc:
             try:
+                metric = self.metric_fn.compute()
                 self.log(
                     'transfer/val_metric',
-                    self.metric_fn.compute(),
+                    metric,
                     on_step=False,
                     on_epoch=True,
                     sync_dist=True,
                     prog_bar=True,
                 )
+                wandb.log({'transfer/train_metric': metric})
             except ValueError as error:
                 self.log('transfer/val_metric', 0.0, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
                 print(f'Logging `0.0` due to {error}. Is this from sanity check?')

@@ -4,13 +4,15 @@ from abc import abstractmethod
 import pytorch_lightning as pl
 import torch
 import torchvision
-from omegaconf import DictConfig
+from omegaconf import DictConfig,OmegaConf
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, IterableDataset
 
 from dabs.src.datasets.catalog import DATASET_DICT
 from dabs.src.models import transformer, resnet
-
+from  viewmaker.src.utils.utils import load_json, save_json
+from dotmap import DotMap
+import os
 
 def get_model(config: DictConfig, dataset_class: Dataset):
     '''Retrieves the specified model class, given the dataset class.'''
@@ -63,9 +65,18 @@ class BaseSystem(pl.LightningModule):
         self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True)
         self.val_dataset = self.dataset(base_root=self.config.data_root, download=True, train=False)
         try:
-            print(f'{len(self.train_dataset)} train examples, {len(self.val_dataset)} val examples')
+            print('\033[94m' + f'{len(self.train_dataset)} train examples, {len(self.val_dataset)} val examples' + '\033[0m')
         except TypeError:
             print('Iterable/streaming dataset- undetermined length.')
+
+        # save config to experiment dir
+        vm_config = DotMap(self.config)
+        vm_config.train_dataset.IN_CHANNELS =self.train_dataset.IN_CHANNELS
+        config_out = os.path.join(vm_config.exp.base_dir,vm_config.exp.name, 'vm_config.yaml')
+        os.makedirs(os.path.dirname(config_out), exist_ok=True)
+        conf = OmegaConf.create(vm_config.toDict())
+        with open(config_out,'w') as fp:
+            OmegaConf.save(config=conf,f=fp.name)
 
     def train_dataloader(self):
         return DataLoader(

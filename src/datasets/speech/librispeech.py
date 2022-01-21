@@ -238,12 +238,12 @@ class LibriSpeechTransfer(Dataset):
     def __getitem__(self, index):
         # NOTE: overwrite index with our custom indices mapping exapmles
         #       to the training and test splits
-        index = self.indices[index]
+        global_index = self.indices[index]
 
         try:
-            wavform, sample_rate, _, speaker_id, _, _ = self.dataset.__getitem__(index)
+            wavform, sample_rate, _, speaker_id, _, _ = self.dataset.__getitem__(global_index)
         except Exception:
-            index2 = (index + 1) % len(self.dataset)
+            index2 = (global_index + 1) % len(self.dataset)
             wavform, sample_rate, _, speaker_id, _, _ = self.dataset.__getitem__(index2)
 
         speaker_id = self.speaker_id_map[speaker_id]
@@ -287,9 +287,9 @@ class LibriSpeechTransfer(Dataset):
     def spec():
         return [
             Input2dSpec(
-                input_size=LibriSpeech.INPUT_SIZE,
-                patch_size=LibriSpeech.PATCH_SIZE,
-                in_channels=LibriSpeech.IN_CHANNELS,
+                input_size=LibriSpeechTransfer.INPUT_SIZE,
+                patch_size=LibriSpeechTransfer.PATCH_SIZE,
+                in_channels=LibriSpeechTransfer.IN_CHANNELS,
             )
         ]
 

@@ -1,4 +1,3 @@
-# @package _group_
 loss: cross_entropy
 metric: accuracy
 

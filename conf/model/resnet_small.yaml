@@ -1,4 +1,3 @@
-# @package _group_
 name: resnet_small
 kwargs:
   resnet_type: resnet_small

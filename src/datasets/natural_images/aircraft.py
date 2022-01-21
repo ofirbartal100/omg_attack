@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
 
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
@@ -16,9 +17,12 @@ AIRCRAFT_RESOURCES = {
 class Aircraft(Dataset):
     # Dataset information.
     NUM_CLASSES = 102
-    INPUT_SIZE = (224, 224)
+    INPUT_SIZE = (112, 112)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
+
+    MEAN = [0.486, 0.507, 0.525]
+    STD  = [0.266, 0.260, 0.276]
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
@@ -126,6 +130,20 @@ class Aircraft(Dataset):
         return [
             Input2dSpec(input_size=Aircraft.INPUT_SIZE, patch_size=Aircraft.PATCH_SIZE, in_channels=Aircraft.IN_CHANNELS),
         ]
+
+    @staticmethod
+    def normalize(imgs):
+        mean = torch.tensor(Aircraft.MEAN, device=imgs.device)
+        std = torch.tensor(Aircraft.STD, device=imgs.device)
+        imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
+
+    @staticmethod
+    def unnormalize(imgs):
+        mean = torch.tensor(Aircraft.MEAN, device=imgs.device)
+        std = torch.tensor(Aircraft.STD, device=imgs.device)
+        imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
+        return imgs
 
 
 class AircraftSmall(Aircraft):

@@ -1,11 +1,14 @@
 algorithm: viewmaker
 data_root: /disk2/ofirb/dabs/data
-gpus: 1
+gpus: [5]
 system: ViewmakerSystem
 
+debug: false
+num_workers: null
+
 exp:
-  base_dir: /disk2/ofirb/dabs/exp/models
-  name: vm
+  base_dir: /home/shahafg/shared/Apple/dabs/exp/models
+  name: vm_trans_cifar10
 
 trainer:
   weights_summary: top
@@ -16,6 +19,8 @@ trainer:
   precision: 32  # set to 16 for O1 mixed precision, 32 for O0 full precision
   max_steps: 100_000
   gradient_clip_val: 0
+  distributed_backend: dp
+  model_checkpoint_freq: 20000
 
 optim:
   name: adam
@@ -51,10 +56,10 @@ model_params:
   noise_dim: 100
   num_res_blocks: 3
   additive: 1
-  multiplicative: 0
-  tps: 0
-  multiplicative_budget: 0.05
   additive_budget: 0.05
+  multiplicative: 0
+  multiplicative_budget: 0.05
+  tps: 0
   tps_budget: 0.05
   budget_aware: false
   clamp_views: true

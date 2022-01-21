@@ -3,7 +3,7 @@
 import hydra
 
 
-@hydra.main(config_path='conf', config_name='pretrain_vm_resnet18')
+@hydra.main(config_path='conf', config_name='pretrain_vm_disc_resnet')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -20,17 +20,23 @@ def run(config):
     # Saving checkpoints and logging with wandb.
     flat_config = flatten_dict.flatten(config, reducer='dot')
     save_dir = os.path.join(config.exp.base_dir, config.exp.name)
+
+    # override dataset configs if needed
     if config.get("num_workers") is not None:
         config.dataset.num_workers = config.num_workers
-    if config.debug:
+
+    # set logger
+    if config.get("debug",False):
         config.dataset.num_workers = 0
         logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)
     else:
         logger = pl.loggers.WandbLogger(entity="shafir", project='domain-agnostic', name=config.exp.name, )
     logger.log_hyperparams(flat_config)
-    callbacks = [pl.callbacks.ModelCheckpoint(dirpath=save_dir, every_n_train_steps=20000, save_top_k=-1)]
+    callbacks = [pl.callbacks.ModelCheckpoint(dirpath=save_dir,
+                                              every_n_train_steps=config.trainer.get("model_checkpoint_freq", 20000),
+                                              save_top_k=-1)]
 
-    assert config.dataset.name in PRETRAINING_DATASETS, f'{config.dataset.name} not one of {PRETRAINING_DATASETS}.'
+    # assert config.dataset.name in PRETRAINING_DATASETS, f'{config.dataset.name} not one of {PRETRAINING_DATASETS}.'
 
     if config.algorithm == 'emix':
         system = emix.EMixSystem(config)
@@ -38,6 +44,8 @@ def run(config):
         system = shed.ShEDSystem(config)
     elif config.algorithm == 'viewmaker':
         system = viewmaker.ViewmakerSystem(config)
+    elif config.algorithm == 'viewmaker_disc':
+        system = viewmaker.ViewmakerSystemDisc(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 
