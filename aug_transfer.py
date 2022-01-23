@@ -4,7 +4,7 @@ import hydra
 import os
 
 
-@hydra.main(config_path='conf', config_name='transfer_vm')
+@hydra.main(config_path='conf', config_name='transfer_aug')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -26,7 +26,7 @@ def run(config):
         config.dataset.num_workers = 0
         logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)
     else:
-        logger = pl.loggers.WandbLogger(entity="shafir", project='domain-agnostic', name=config.exp.name)
+        logger = pl.loggers.WandbLogger(entity="shafir", project='aug_transfer', name=config.exp.name)
     logger.log_hyperparams(flat_config)
     ckpt_callback = pl.callbacks.ModelCheckpoint(dirpath=save_dir)
 
@@ -47,7 +47,7 @@ def run(config):
     )
 
     # system = transfer.TransferSystem(config)
-    system = augmentation_transfer_viewmaker.ViewmakerTransferSystem(config)
+    system = aug_transfer_vm.ViewmakerTransferSystem(config)
     trainer.fit(system)
 
 

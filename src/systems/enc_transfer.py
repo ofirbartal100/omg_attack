@@ -75,7 +75,7 @@ class TransferSystem(BaseSystem):
         self.is_auroc = (config.dataset.metric == 'auroc')  # this metric should only be computed per epoch
 
     def get_model_weights(self, ckpt):
-        system_weights = torch.load(ckpt)['state_dict']
+        system_weights = torch.load(ckpt, map=self.device)['state_dict']
         model_weights = {}
         for name, weight in system_weights.items():
             if "model" in name:

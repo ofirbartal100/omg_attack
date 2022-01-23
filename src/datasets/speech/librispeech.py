@@ -21,7 +21,7 @@ class LibriSpeech(Dataset):
     ALL_TRAIN_NUM_CLASSES = 2338
     DEV_CLEAN_NUM_CLASSES = 40
 
-    INPUT_SIZE = (112, 112)
+    INPUT_SIZE = (64, 64)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 1
 
@@ -182,7 +182,7 @@ class LibriSpeechTransfer(Dataset):
     MAX_LENGTH = 150526
 
     NUM_CLASSES = 40
-    INPUT_SIZE = (112, 112)
+    INPUT_SIZE = (64, 64)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 1
 

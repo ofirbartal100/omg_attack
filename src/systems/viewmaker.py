@@ -32,9 +32,9 @@ class ViewmakerSystem(BaseSystem):
     def setup(self, stage):
         super().setup(self)
         self.viewmaker = self.create_viewmaker()
-        #### delete ####
-        self.setup2()
-        ################
+        # #### delete ####
+        # self.setup2()
+        # ################
 
     def forward(self, x, prehead=False):
         x[0] = self.normalize(x[0])
@@ -84,10 +84,10 @@ class ViewmakerSystem(BaseSystem):
         self.wandb_logging(emb_dict)
         self.log_dict(metrics)
 
-        ##### delete ######
-        if "orig_embs" in emb_dict:
-            self.add_to_memory_bank(emb_dict["indices"], emb_dict["orig_embs"])
-        ###################
+        # ##### delete ######
+        # if "orig_embs" in emb_dict:
+        #     self.add_to_memory_bank(emb_dict["indices"], emb_dict["orig_embs"])
+        # ###################
 
         return loss
 
@@ -121,37 +121,37 @@ class ViewmakerSystem(BaseSystem):
         self.log_dict(output)
         return output
 
-    ##### delete this ######
-    def setup2(self):
-        self.memory_bank = MemoryBank(
-            len(self.train_dataset),
-            128,
-        )
-
-    def add_to_memory_bank(self, indices, img_embs):
-        new_data_memory = utils.l2_normalize(img_embs, dim=1)
-        self.memory_bank.update(indices, new_data_memory)
-
-    def get_nearest_neighbor_label(self, img_embs, labels):
-        '''
-        Used for online kNN classifier.
-        For each image in validation, find the nearest image in the
-        training dataset using the memory bank. Assume its label as
-        the predicted label.
-        '''
-        batch_size = img_embs.size(0)
-        all_dps = self.memory_bank.get_all_dot_products(img_embs)
-        _, neighbor_idxs = torch.topk(all_dps, k=1, sorted=False, dim=1)
-        neighbor_idxs = neighbor_idxs.squeeze(1)
-        neighbor_idxs = neighbor_idxs.cpu().numpy()
-
-        neighbor_labels = [self.train_dataset[idx][2] for idx in neighbor_idxs]
-        neighbor_labels = torch.Tensor(neighbor_labels).long()
-        num_correct = torch.sum(neighbor_labels.cpu() == labels.cpu()).item()
-
-        return num_correct / batch_size
-
-    ########################
+    # ##### delete this ######
+    # def setup2(self):
+    #     self.memory_bank = MemoryBank(
+    #         len(self.train_dataset),
+    #         128,
+    #     )
+    #
+    # def add_to_memory_bank(self, indices, img_embs):
+    #     new_data_memory = utils.l2_normalize(img_embs, dim=1)
+    #     self.memory_bank.update(indices, new_data_memory)
+    #
+    # def get_nearest_neighbor_label(self, img_embs, labels):
+    #     '''
+    #     Used for online kNN classifier.
+    #     For each image in validation, find the nearest image in the
+    #     training dataset using the memory bank. Assume its label as
+    #     the predicted label.
+    #     '''
+    #     batch_size = img_embs.size(0)
+    #     all_dps = self.memory_bank.get_all_dot_products(img_embs)
+    #     _, neighbor_idxs = torch.topk(all_dps, k=1, sorted=False, dim=1)
+    #     neighbor_idxs = neighbor_idxs.squeeze(1)
+    #     neighbor_idxs = neighbor_idxs.cpu().numpy()
+    #
+    #     neighbor_labels = [self.train_dataset[idx][2] for idx in neighbor_idxs]
+    #     neighbor_labels = torch.Tensor(neighbor_labels).long()
+    #     num_correct = torch.sum(neighbor_labels.cpu() == labels.cpu()).item()
+    #
+    #     return num_correct / batch_size
+    #
+    # ########################
 
     def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,
                        using_native_amp=False, using_lbfgs=False):
@@ -274,8 +274,8 @@ class ViewmakerSystem(BaseSystem):
     def view(self, imgs, with_unnormalized=False):
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
-        views = self.viewmaker(self.normalize(imgs))
-        unnormalized = self.unnormalize(views)
+        unnormalized = self.viewmaker(imgs)
+        views = self.normalize(unnormalized)
         if with_unnormalized:
             return views, unnormalized
         return views
@@ -364,16 +364,16 @@ class ViewmakerSystemDisc(ViewmakerSystem):
 
         img.requires_grad = True
         # self.disc = self.disc.to(self.device)
+        step_output['disc_r1_penalty'] = 0.0
         if optimizer_idx == 2:
             step_output["real_score"] = self.disc(self.normalize(img))
+            if self.disc.wgan:
+                try:
+                    step_output["disc_r1_penalty"] = self.disc.r1_penalty(step_output["real_score"], img)
+                # this fails in validation mode
+                except RuntimeError as e:
+                    pass
         step_output["fake_score"] = torch.cat([self.disc(views1), self.disc(views2)], dim=0)
-        step_output['disc_r1_penalty'] = 0.0
-        if self.disc.wgan:
-            try:
-                step_output["disc_r1_penalty"] = self.disc.r1_penalty(step_output["real_score"], img)
-            # this fails in validation mode
-            except RuntimeError as e:
-                pass
         return step_output
 
     def gan_objective(self, emb_dict):
@@ -399,12 +399,12 @@ class ViewmakerSystemDisc(ViewmakerSystem):
         step_output.update(self.gan_forward(batch, step_output))
         encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = self.objective(step_output)
         disc_loss, disc_acc, gen_loss, gen_acc, r1_reg = self.gan_objective(step_output)
-        knn_acc = self.get_nearest_neighbor_label(step_output["orig_embs"], batch[-1])
+        # knn_acc = self.get_nearest_neighbor_label(step_output["orig_embs"], batch[-1])
 
         output = OrderedDict({
             'val_encoder_loss': encoder_loss,
             'val_view_maker_loss': view_maker_loss,
-            'val_zero_knn_acc': torch.tensor(knn_acc, dtype=float, device=self.device),
+            # 'val_zero_knn_acc': torch.tensor(knn_acc, dtype=float, device=self.device),
             'val_positive_sim': positive_sim,
             'val_negative_sim': negative_sim,
             'val_generator_loss': gen_loss,

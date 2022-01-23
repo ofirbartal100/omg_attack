@@ -159,9 +159,13 @@ class SSLOnlineEvaluator(Callback):  # pragma: no cover
     def on_train_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         # log auroc at end of epoch here
         if self.multi_label:
-            pl_module.log(
-                'online_train_auroc', self.auroc.compute(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True
-            )
+            try:
+                pl_module.log(
+                    'online_train_auroc', self.auroc.compute(), on_step=False, on_epoch=True, sync_dist=True, prog_bar=True
+                )
+            except ValueError as error:
+                pl_module.log('online_val_auroc', 0.0, on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
+                print(f'Logging `0.0` due to {error}. Is this from sanity check?')
             self.auroc.reset()
 
     def on_validation_batch_end(

@@ -7,6 +7,7 @@ import torchmetrics
 from dotmap import DotMap
 from collections import OrderedDict
 from pytorch_lightning.loggers import WandbLogger
+from torch.optim.lr_scheduler import MultiStepLR
 from torchvision.utils import make_grid
 import wandb
 import json
@@ -72,7 +73,10 @@ class ViewmakerTransferSystem(BaseSystem):
         if num_classes is None:
             num_classes = 1  # maps to 1 output channel for regression
         self.num_classes = num_classes
-        self.linear = torch.nn.Linear(self.model.emb_dim, num_classes)
+        try:
+            self.linear = torch.nn.Linear(self.model.emb_dim, num_classes)
+        except AttributeError:
+            self.linear = torch.nn.Linear(self.model.resnet.fc.out_features, num_classes)
 
         # Initialize loss and metric functions.
         self.loss_fn, self.metric_fn, self.post_fn = get_loss_and_metric_fns(
@@ -89,7 +93,7 @@ class ViewmakerTransferSystem(BaseSystem):
         with open(config_path, 'r') as fp:
             vm_config = OmegaConf.load(fp.name)
 
-        sd = torch.load(system_ckpt)['state_dict']
+        sd = torch.load(system_ckpt, map_location=self.device)['state_dict']
         vm_sd = OrderedDict([(i.replace('viewmaker.',''),sd[i]) for i in sd if 'viewmaker' in i])
 
         viewmaker = Viewmaker(
@@ -111,10 +115,12 @@ class ViewmakerTransferSystem(BaseSystem):
             aug_proba=vm_config.model_params.aug_proba or 1,
         )
 
-        viewmaker.load_state_dict(vm_sd,strict=False)
+        viewmaker.load_state_dict(vm_sd, strict=False)
         viewmaker.eval()
         for param in viewmaker.parameters():
             param.requires_grad = False
+        if self.config.viewmaker.get("p") is not None:
+            viewmaker.aug_proba = self.config.viewmaker.get("p")
 
         return viewmaker
 
@@ -160,6 +166,7 @@ class ViewmakerTransferSystem(BaseSystem):
 
     def validation_step(self, batch, batch_idx):
         batch, labels = batch[1:-1], batch[-1]
+        batch[0] = self.normalize(batch[0])
         preds = self.forward(batch)
         if self.num_classes == 1:
             preds = preds.squeeze(1)
@@ -192,8 +199,8 @@ class ViewmakerTransferSystem(BaseSystem):
     def view(self, imgs, with_unnormalized=False):
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
-        views = self.viewmaker(self.normalize(imgs))
-        unnormalized = self.unnormalize(views)
+        unnormalized = self.viewmaker(imgs)
+        views = self.normalize(unnormalized)
         # views = self.normalize(unnormalized)
         if with_unnormalized:
             return views, unnormalized
@@ -259,4 +266,11 @@ class ViewmakerTransferSystem(BaseSystem):
             else:
                 self.logger.experiment.add_image('original_vs_views', grid, self.global_step)
 
-    
+    def configure_optimizers(self):
+        optim = super().configure_optimizers()
+        if self.config.optim.get("lr_scheduler"):
+            sched = MultiStepLR(optim, milestones=[75,90,100], gamma=0.1)
+            return [optim], [sched]
+        else:
+            return optim
+

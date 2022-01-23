@@ -40,7 +40,7 @@ class CheXpert(VisionDataset):
     '''
     # Dataset information.
     TRANSFORMS = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((112, 112)),
         transforms.ToTensor(),
     ])
     LABELS_COL = 5
@@ -58,7 +58,7 @@ class CheXpert(VisionDataset):
     )
 
     NUM_CLASSES = 5  # 14 total, but we select 5: len(self.CHEXPERT_LABELS_IDX)
-    INPUT_SIZE = (224, 224)
+    INPUT_SIZE = (112, 112)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 1
     MEAN = [0.5030]

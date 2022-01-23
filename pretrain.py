@@ -70,6 +70,7 @@ def run(config):
         val_check_interval=config.trainer.val_check_interval,
         limit_val_batches=config.trainer.limit_val_batches,
         callbacks=callbacks,
+        profiler="simple",
         weights_summary=config.trainer.weights_summary,
         gradient_clip_val=config.trainer.gradient_clip_val,
         precision=config.trainer.precision,

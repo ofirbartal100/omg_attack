@@ -160,3 +160,17 @@ class AircraftSmall(Aircraft):
                 in_channels=AircraftSmall.IN_CHANNELS,
             ),
         ]
+
+    @staticmethod
+    def normalize(imgs):
+        mean = torch.tensor(Aircraft.MEAN, device=imgs.device)
+        std = torch.tensor(Aircraft.STD, device=imgs.device)
+        imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
+
+    @staticmethod
+    def unnormalize(imgs):
+        mean = torch.tensor(Aircraft.MEAN, device=imgs.device)
+        std = torch.tensor(Aircraft.STD, device=imgs.device)
+        imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
+        return imgs

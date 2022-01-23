@@ -1,6 +1,7 @@
 import os
 from os.path import join
 
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
@@ -18,6 +19,8 @@ class DTD(Dataset):
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
 
+    MEAN = [0.533, 0.474, 0.426]
+    STD = [0.261, 0.250, 0.259]
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
         self.train = train
@@ -112,6 +115,19 @@ class DTD(Dataset):
             Input2dSpec(input_size=DTD.INPUT_SIZE, patch_size=DTD.PATCH_SIZE, in_channels=DTD.IN_CHANNELS),
         ]
 
+    @staticmethod
+    def normalize(imgs):
+        mean = torch.tensor(DTD.MEAN, device=imgs.device)
+        std = torch.tensor(DTD.STD, device=imgs.device)
+        imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
+
+    @staticmethod
+    def unnormalize(imgs):
+        mean = torch.tensor(DTD.MEAN, device=imgs.device)
+        std = torch.tensor(DTD.STD, device=imgs.device)
+        imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
+        return imgs
 
 class DTDSmall(DTD):
     INPUT_SIZE = (32, 32)

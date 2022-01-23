@@ -1,5 +1,6 @@
 import os
 
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
@@ -21,6 +22,8 @@ class CUBirds(Dataset):
     INPUT_SIZE = (224, 224)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
+    MEAN = [0.483, 0.491, 0.424]
+    STD  = [0.228, 0.224, 0.259]
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
@@ -106,6 +109,19 @@ class CUBirds(Dataset):
             Input2dSpec(input_size=CUBirds.INPUT_SIZE, patch_size=CUBirds.PATCH_SIZE, in_channels=CUBirds.IN_CHANNELS),
         ]
 
+    @staticmethod
+    def normalize(imgs):
+        mean = torch.tensor(CUBirds.MEAN, device=imgs.device)
+        std = torch.tensor(CUBirds.STD, device=imgs.device)
+        imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
+
+    @staticmethod
+    def unnormalize(imgs):
+        mean = torch.tensor(CUBirds.MEAN, device=imgs.device)
+        std = torch.tensor(CUBirds.STD, device=imgs.device)
+        imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
+        return imgs
 
 class CUBirdsSmall(CUBirds):
     INPUT_SIZE = (32, 32)

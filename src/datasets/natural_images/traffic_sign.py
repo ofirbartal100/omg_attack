@@ -3,6 +3,7 @@ from glob import glob
 from os.path import join
 
 import numpy as np
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
@@ -21,6 +22,8 @@ class TrafficSign(Dataset):
     INPUT_SIZE = (224, 224)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
+    MEAN = [0.335, 0.291, 0.295]
+    STD = [0.267, 0.249, 0.251]
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
@@ -103,6 +106,20 @@ class TrafficSign(Dataset):
                 in_channels=TrafficSign.IN_CHANNELS,
             ),
         ]
+
+    @staticmethod
+    def normalize(imgs):
+        mean = torch.tensor(TrafficSign.MEAN, device=imgs.device)
+        std = torch.tensor(TrafficSign.STD, device=imgs.device)
+        imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
+        return imgs
+
+    @staticmethod
+    def unnormalize(imgs):
+        mean = torch.tensor(TrafficSign.MEAN, device=imgs.device)
+        std = torch.tensor(TrafficSign.STD, device=imgs.device)
+        imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
+        return imgs
 
 
 class TrafficSignSmall(TrafficSign):

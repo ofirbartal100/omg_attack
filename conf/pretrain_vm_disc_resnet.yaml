@@ -1,16 +1,16 @@
 algorithm: viewmaker_disc
-data_root: /disk2/ofirb/dabs/data
-#data_root: /home/dabs_vm/data
-gpus: [2]
+#data_root: /disk2/ofirb/dabs/data
+data_root: /home/dabs_vm/data
+gpus: [3]
 system: ViewmakerSystemDisc
 
-debug: false
+debug: true
 num_workers: null # #########
 
 exp:
-  base_dir: /home/shahafg/shared/Apple/dabs/exp/models
-#  base_dir: /home/dabs_vm/shahaf/dabs/exp/models
-  name: vm_disc_normalized_cifar10 -w0.01
+#  base_dir: /home/shahafg/shared/Apple/dabs/exp/models
+  base_dir: /home/dabs_vm/shahaf/dabs/exp/models
+  name: vm_disc_librispeech64 - resnet_small b0.2
   # #########
 
 trainer:
@@ -32,16 +32,16 @@ optim:
   momentum: 0.9  # only used for momentum-based optimizers
 
 defaults:
-  - dataset: cifar10_small # #########
-  - model: resnet_small # #########
+  - dataset: librispeech # #########
+  - model: resnet18 # ########)#
 #  - disc: tiny_p2p_disc
 
 disc:
   lr: 0.0001
   gan_warmup: 1
-  adv_loss_weight: 0.01 # #########
-  wgan: false
-  r1_penalty_weight: 0.00001
+  adv_loss_weight: 0.1 # #########
+  wgan: false # #########
+  r1_penalty_weight: 0.000001
   conv_blocks: 4
   dis_skip_steps: 0
 
@@ -55,19 +55,19 @@ optim_params:
   viewmaker_optim: adam
   viewmaker_learning_rate: 0.001
 
-model_params: 
+model_params:
   dimensions: 3
   noise_dim: 100
   num_res_blocks: 3
   additive: 1
-  additive_budget: 0.05 # #########
+  additive_budget: 0.2 # #########
   multiplicative: 0
   multiplicative_budget: 0.05
   tps: 0
   tps_budget: 0.05
   budget_aware: false
   clamp_views: false # #########
-  generator_activation: relu
+  generator_activation: relu # #########
   spectral: False
   viewmaker_downsample: False
   use_budget: True
