@@ -59,7 +59,7 @@ def get_loss_and_metric_fns(loss, metric, num_classes):
 
 class ViewmakerTransferSystem(BaseSystem):
 
-    def __init__(self, config):
+    def __init__(self, config,init_viewmaker=True):
         super().__init__(config)
 
         # Restore checkpoint if provided.
@@ -85,8 +85,12 @@ class ViewmakerTransferSystem(BaseSystem):
             self.dataset.num_classes(),
         )
         self.is_auroc = (config.dataset.metric == 'auroc')  # this metric should only be computed per epoch
+        self.setup_vm(config)
+            
 
+    def setup_vm(self,config):
         self.viewmaker = self.load_viewmaker_from_checkpoint(config.vm_ckpt,config.viewmaker.config_path)
+
 
     def load_viewmaker_from_checkpoint(self,  system_ckpt, config_path, eval=True):
         config_path =config_path
@@ -121,6 +125,8 @@ class ViewmakerTransferSystem(BaseSystem):
             param.requires_grad = False
         if self.config.viewmaker.get("p") is not None:
             viewmaker.aug_proba = self.config.viewmaker.get("p")
+        if self.config.viewmaker.get("override_budget") is not None:
+            viewmaker.additive_budget = self.config.viewmaker.get("override_budget")
 
         return viewmaker
 

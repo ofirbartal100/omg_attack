@@ -6,7 +6,8 @@ import torch
 import torchvision
 from omegaconf import DictConfig, OmegaConf
 from torch import nn
-from torch.utils.data import DataLoader, Dataset, IterableDataset
+from torch.utils.data import DataLoader, Dataset, IterableDataset, SubsetRandomSampler,Sampler
+from dabs.src.datasets.utils import fraction_db
 
 from dabs.src.datasets.catalog import DATASET_DICT
 from dabs.src.models import transformer, resnet
@@ -89,9 +90,10 @@ class BaseSystem(pl.LightningModule):
             self.train_dataset,
             batch_size=self.config.dataset.batch_size,
             num_workers=self.config.dataset.num_workers,
-            shuffle=not isinstance(self.train_dataset, IterableDataset),
             drop_last=True,
             pin_memory=True,
+            sampler=SubsetRandomSampler(fraction_db(self.train_dataset.dataset,0.08)[0]),
+            # shuffle=not isinstance(self.train_dataset, IterableDataset),
         )
 
     def val_dataloader(self):
@@ -105,6 +107,7 @@ class BaseSystem(pl.LightningModule):
             shuffle=False,
             drop_last=False,
             pin_memory=True,
+            sampler=SubsetRandomSampler(fraction_db(self.val_dataset.dataset,0.08)[0]),
         )
 
     def configure_optimizers(self):
