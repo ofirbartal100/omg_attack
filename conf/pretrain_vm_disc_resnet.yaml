@@ -1,6 +1,6 @@
 algorithm: viewmaker_disc
-data_root: /disk2/ofirb/dabs/data
-# data_root: /home/dabs_vm/data
+#data_root: /disk2/ofirb/dabs/data
+data_root: /home/dabs_vm/data
 gpus: [3]
 system: ViewmakerSystemDisc
 

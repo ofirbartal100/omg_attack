@@ -1,18 +1,17 @@
 ckpt:
 vm_ckpt: /home/shahafg/shared/Apple/dabs/exp/models/vm_disc_cifar10/epoch=256-step=99999.ckpt
 data_root: /disk2/ofirb/dabs/data
-gpus: [5]
+gpus: [3]
 system: ViewmakerSystem
 debug: false
 
 viewmaker:
   config_path: /home/shahafg/shared/Apple/dabs/exp/models/vm_disc_cifar10/vm_config.yaml
   p: 0.7
-  additive_budget: 0.6
 
 exp:
-  base_dir: /disk2/ofirb/dabs/exp
-  name: aug_transfer vm_disc cifar10 -> cifar10_small 8% p0.7 budget0.6
+  base_dir: /home/shahafg/shared/Apple/dabs/exp
+  name: aug_transfer vm_disc cifar10 -> cifar10_small 8% p0.7
 
 trainer:
   weights_summary: top
