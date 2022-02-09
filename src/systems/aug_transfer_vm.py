@@ -59,7 +59,7 @@ def get_loss_and_metric_fns(loss, metric, num_classes):
 
 class ViewmakerTransferSystem(BaseSystem):
 
-    def __init__(self, config):
+    def __init__(self, config, init_viewmaker=True):
         super().__init__(config)
 
         # Restore checkpoint if provided.
@@ -85,16 +85,18 @@ class ViewmakerTransferSystem(BaseSystem):
             self.dataset.num_classes(),
         )
         self.is_auroc = (config.dataset.metric == 'auroc')  # this metric should only be computed per epoch
+        self.setup_vm(config)
 
-        self.viewmaker = self.load_viewmaker_from_checkpoint(config.vm_ckpt,config.viewmaker.config_path)
+    def setup_vm(self, config):
+        self.viewmaker = self.load_viewmaker_from_checkpoint(config.vm_ckpt, config.viewmaker.config_path)
 
-    def load_viewmaker_from_checkpoint(self,  system_ckpt, config_path, eval=True):
-        config_path =config_path
+    def load_viewmaker_from_checkpoint(self, system_ckpt, config_path, eval=True):
+        config_path = config_path
         with open(config_path, 'r') as fp:
             vm_config = OmegaConf.load(fp.name)
 
         sd = torch.load(system_ckpt, map_location=self.device)['state_dict']
-        vm_sd = OrderedDict([(i.replace('viewmaker.',''),sd[i]) for i in sd if 'viewmaker' in i])
+        vm_sd = OrderedDict([(i.replace('viewmaker.', ''), sd[i]) for i in sd if 'viewmaker' in i])
 
         viewmaker = Viewmaker(
             num_channels=vm_config.train_dataset.IN_CHANNELS,
@@ -119,8 +121,10 @@ class ViewmakerTransferSystem(BaseSystem):
         viewmaker.eval()
         for param in viewmaker.parameters():
             param.requires_grad = False
-        if self.config.viewmaker.get("p") is not None:
-            viewmaker.aug_proba = self.config.viewmaker.get("p")
+        if self.config.viewmaker.get("override_budget") is not None:
+            viewmaker.additive_budget = self.config.viewmaker.get("override_budget")
+        if self.config.viewmaker.get("aug_proba") is not None:
+            viewmaker.aug_proba = self.config.viewmaker.get("aug_proba")
 
         return viewmaker
 
@@ -134,7 +138,7 @@ class ViewmakerTransferSystem(BaseSystem):
 
     def training_step(self, batch, batch_idx):
         batch, labels = batch[1:-1], batch[-1]
-        vb, uvb = self.view(batch[0],True)
+        vb, uvb = self.view(batch[0], True)
         preds = self.forward([vb])
         if self.num_classes == 1:
             preds = preds.squeeze(1)
@@ -148,7 +152,7 @@ class ViewmakerTransferSystem(BaseSystem):
                 metric = self.metric_fn(self.post_fn(preds.float()), labels)
                 self.log('transfer/train_metric', metric, on_step=True, on_epoch=False, prog_bar=False, sync_dist=True)
 
-        self.wandb_logging(batch[0],uvb)
+        self.wandb_logging(batch[0], uvb)
         return loss
 
     def on_train_epoch_end(self):
@@ -168,6 +172,8 @@ class ViewmakerTransferSystem(BaseSystem):
         batch, labels = batch[1:-1], batch[-1]
         batch[0] = self.normalize(batch[0])
         preds = self.forward(batch)
+        # vb, uvb = self.view(batch[0], True)
+        # preds = self.forward([vb])
         if self.num_classes == 1:
             preds = preds.squeeze(1)
 
@@ -242,7 +248,7 @@ class ViewmakerTransferSystem(BaseSystem):
         imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
         return imgs
 
-    def wandb_logging(self, img,view1):
+    def wandb_logging(self, img, view1):
         logging_steps = 20
         if isinstance(self.logger, WandbLogger):
             logging_steps = 200
@@ -251,16 +257,17 @@ class ViewmakerTransferSystem(BaseSystem):
             amount_images = 10
 
             diff_heatmap = heatmap_of_view_effect(img[:amount_images], view1[:amount_images])
-            if img.size(1) >3:
+            if img.size(1) > 3:
                 img = img.mean(1, keepdim=True)
                 unnormalized_view1 = view1.mean(1, keepdim=True)
                 diff_heatmap = diff_heatmap.mean(1, keepdim=True)
-            cat = torch.cat([img[:amount_images], view1[:amount_images],diff_heatmap])
+            cat = torch.cat([img[:amount_images], view1[:amount_images], diff_heatmap])
             grid = make_grid(cat, nrow=amount_images)
             grid = torch.clamp(grid, 0, 1.0)
             if isinstance(self.logger, WandbLogger):
                 wandb.log({
-                    "original_vs_views": wandb.Image(grid, caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
+                    "original_vs_views": wandb.Image(grid,
+                                                     caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
                     "mean distortion": (view1 - img).abs().mean(),
                 })
             else:
@@ -268,9 +275,9 @@ class ViewmakerTransferSystem(BaseSystem):
 
     def configure_optimizers(self):
         optim = super().configure_optimizers()
-        if self.config.optim.get("lr_scheduler"):
-            sched = MultiStepLR(optim, milestones=[75,90,100], gamma=0.1)
+        if self.config.optim.get("lr_scheduler", False):
+            sched = MultiStepLR(optim, milestones=self.config.optim.lr_scheduler.milestones,
+                                gamma=self.config.optim.lr_scheduler.gamma)
             return [optim], [sched]
         else:
             return optim
-

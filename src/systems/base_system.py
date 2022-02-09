@@ -6,7 +6,8 @@ import torch
 import torchvision
 from omegaconf import DictConfig, OmegaConf
 from torch import nn
-from torch.utils.data import DataLoader, Dataset, IterableDataset
+from torch.utils.data import DataLoader, Dataset, IterableDataset, SubsetRandomSampler,Sampler
+from dabs.src.datasets.utils import fraction_db
 
 from dabs.src.datasets.catalog import DATASET_DICT
 from dabs.src.models import transformer, resnet
@@ -65,9 +66,6 @@ class BaseSystem(pl.LightningModule):
     def setup(self, stage):
         '''Called right after downloading data and before fitting model, initializes datasets with splits.'''
         self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True)
-        if "cifar" in self.config.dataset.name:
-            self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True,
-                                              low_data=self.config.dataset.get("low_data", 1.0))
         self.val_dataset = self.dataset(base_root=self.config.data_root, download=True, train=False)
         try:
             print(
@@ -89,9 +87,11 @@ class BaseSystem(pl.LightningModule):
             self.train_dataset,
             batch_size=self.config.dataset.batch_size,
             num_workers=self.config.dataset.num_workers,
-            shuffle=not isinstance(self.train_dataset, IterableDataset),
+            # shuffle=not isinstance(self.train_dataset, IterableDataset),
             drop_last=True,
             pin_memory=True,
+            sampler=SubsetRandomSampler(fraction_db(self.train_dataset.dataset, self.low_data)[0]),
+            # shuffle=not isinstance(self.train_dataset, IterableDataset),
         )
 
     def val_dataloader(self):
@@ -105,6 +105,7 @@ class BaseSystem(pl.LightningModule):
             shuffle=False,
             drop_last=False,
             pin_memory=True,
+            # sampler=SubsetRandomSampler(fraction_db(self.val_dataset.dataset, 0.08)[0]),
         )
 
     def configure_optimizers(self):
@@ -117,6 +118,7 @@ class BaseSystem(pl.LightningModule):
                 lr=self.config.optim.lr,
                 weight_decay=self.config.optim.weight_decay,
                 momentum=self.config.optim.momentum,
+                nesterov=self.config.optim.get("nesterov", False),
             )
         else:
             raise ValueError(f'{self.config.optim.name} optimizer unrecognized.')

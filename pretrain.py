@@ -26,7 +26,7 @@ def run(config):
         config.dataset.num_workers = config.num_workers
 
     # set logger
-    if config.get("debug",False):
+    if config.get("debug", False):
         config.dataset.num_workers = 0
         logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)
     else:
@@ -44,8 +44,12 @@ def run(config):
         system = shed.ShEDSystem(config)
     elif config.algorithm == 'viewmaker':
         system = viewmaker.ViewmakerSystem(config)
+    elif config.algorithm == 'viewmaker_coop':
+        system = viewmaker.ViewmakerCoopSystem(config)
     elif config.algorithm == 'viewmaker_disc':
         system = viewmaker.ViewmakerSystemDisc(config)
+    elif config.algorithm == 'double_viewmaker':
+        system = viewmaker.DoubleViewmakerSystem(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 

@@ -1,0 +1,6 @@
+name: resnet_small
+kwargs:
+  resnet_type: resnet_small
+  dim: 128 # dim after resnet
+  projection_head: false
+  out_dim: 128 # dim after projection_head

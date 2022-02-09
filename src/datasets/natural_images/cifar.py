@@ -17,10 +17,9 @@ class CIFAR10(Dataset):
     MEAN = [0.4914, 0.4822, 0.4465]
     STD = [0.1953, 0.1925, 0.1942]
 
-    def __init__(self, base_root: str, download: bool = False, train: bool = True, low_data=1.0) -> None:
+    def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
         self.root = os.path.join(base_root, 'natural_images', 'cifar10')
-        self.low_data = low_data
         if not os.path.isdir(self.root):
             os.makedirs(self.root)
         self.transforms = transforms.Compose(
@@ -43,8 +42,6 @@ class CIFAR10(Dataset):
         return index, img, label
 
     def __len__(self):
-        if self.low_data < 1.0:
-            return int(len(self.dataset)* self.low_data)
         return len(self.dataset)
 
     @staticmethod
