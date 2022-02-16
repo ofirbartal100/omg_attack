@@ -104,6 +104,7 @@ class DomainAgnosticTransformer(BaseModel):
         dim_head: int = 64,
         dropout: float = 0.,
         emb_dropout: float = 0.,
+        extra_tokens: int = 0
     ):
         assert embed_dim == dim, f'Different embed dim than model dim is currently not allowed'
 
@@ -111,7 +112,7 @@ class DomainAgnosticTransformer(BaseModel):
         super().__init__(input_specs=input_specs, embed_dim=embed_dim)
 
         # Sequence length is stored in each embedding module.
-        seq_len = sum(module.length for module in self.embed_modules)
+        seq_len = sum(module.length for module in self.embed_modules) + extra_tokens
 
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
         self.pool = pool

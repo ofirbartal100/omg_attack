@@ -16,7 +16,7 @@ from dotmap import DotMap
 import os
 
 
-def get_model(config: DictConfig, dataset_class: Dataset):
+def get_model(config: DictConfig, dataset_class: Dataset, **kwargs):
     '''Retrieves the specified model class, given the dataset class.'''
     spec = dataset_class.spec()
     if config.model.name == 'transformer':
@@ -26,9 +26,10 @@ def get_model(config: DictConfig, dataset_class: Dataset):
     else:
         raise ValueError(f'Encoder {config.model.name} doesn\'t exist.')
     # Retrieve the dataset-specific params.
+    kwargs.update(config.model.kwargs)
     encoder_model = model_class(
         input_specs=spec,
-        **config.model.kwargs, )
+        **kwargs, )
     return encoder_model
 
 
@@ -90,7 +91,7 @@ class BaseSystem(pl.LightningModule):
             # shuffle=not isinstance(self.train_dataset, IterableDataset),
             drop_last=True,
             pin_memory=True,
-            sampler=SubsetRandomSampler(fraction_db(self.train_dataset.dataset, self.low_data)[0]),
+            sampler=SubsetRandomSampler(fraction_db(self.train_dataset, self.low_data)[0]),
             # shuffle=not isinstance(self.train_dataset, IterableDataset),
         )
 

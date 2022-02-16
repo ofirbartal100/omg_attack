@@ -3,6 +3,7 @@ from typing import List, Union
 import numpy as np
 import torch.nn as nn
 from einops.layers.torch import Rearrange
+import torch.nn.functional as F
 
 
 class InputTokensToEmbeddings(nn.Module):
@@ -99,7 +100,7 @@ class Input2dToEmbeddings(nn.Module):
         assert input_2d.dim() == 4  # (batch_size, in_channels, input_height, input_width)
         assert input_2d.shape[1] == self.in_channels
         assert all(a == b for a, b in zip(input_2d.shape[2:], self.input_size))
-        return self.embed(input_2d)
+        return F.normalize(self.embed(input_2d), dim=-1, p=2)
 
     @property
     def length(self):

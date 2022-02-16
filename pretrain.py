@@ -3,7 +3,7 @@
 import hydra
 
 
-@hydra.main(config_path='conf', config_name='pretrain_vm_disc_resnet')
+@hydra.main(config_path='conf', config_name='pretrain_double_vm_resnet')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -50,6 +50,8 @@ def run(config):
         system = viewmaker.ViewmakerSystemDisc(config)
     elif config.algorithm == 'double_viewmaker':
         system = viewmaker.DoubleViewmakerSystem(config)
+    elif config.algorithm == 'viewmaker_transformer':
+        system = viewmaker.ViewmakerTransformerSystem(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 
