@@ -26,7 +26,7 @@ def run(config):
         config.dataset.num_workers = 0
         logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)
     else:
-        logger = pl.loggers.WandbLogger(entity="shafir", project='aug_transfer', name=config.exp.name)
+        logger = pl.loggers.WandbLogger(entity="shafir", project='double-viewmaker-transfer', name=config.exp.name)
     logger.log_hyperparams(flat_config)
     ckpt_callback = pl.callbacks.ModelCheckpoint(dirpath=save_dir)
 

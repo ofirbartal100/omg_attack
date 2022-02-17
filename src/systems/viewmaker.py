@@ -229,7 +229,6 @@ class ViewmakerSystem(BaseSystem):
         if optimizer_idx > 0:
             return
 
-
         if self.global_step % logging_steps == 0:
             amount_images = 10
             img = emb_dict['originals']
@@ -298,6 +297,9 @@ class ViewmakerSystem(BaseSystem):
         if with_unnormalized:
             return views, unnormalized
         return views
+
+    def get_augmentation(self, imgs, with_unnormalized=False):
+        return self.view(imgs,with_unnormalized=with_unnormalized)
 
     def normalize(self, imgs):
         # These numbers were computed using compute_image_dset_stats.py
@@ -376,7 +378,7 @@ class ViewmakerSystem(BaseSystem):
             cam = cam / np.max(cam)
             return np.uint8(255 * cam)
 
-        res = show_cam_on_image(img.detach().cpu().permute(1,2,0).numpy(), grayscale_cam, use_rgb=True, colormap=cv2.COLORMAP_JET) / 255
+        res = show_cam_on_image(img.detach().cpu().permute(1, 2, 0).numpy(), grayscale_cam, use_rgb=True, colormap=cv2.COLORMAP_JET) / 255
         return torch.from_numpy(res).to(input_tensor.device).permute(2, 0, 1)
 
 
@@ -403,7 +405,6 @@ class ViewmakerSystemDisc(ViewmakerSystem):
             loss = encoder_loss
             metrics = {'encoder_loss': encoder_loss, "train_acc": encoder_acc, "positive_sim": positive_sim,
                        "negative_sim": negative_sim}
-
 
         elif optimizer_idx == 1:
             loss = self.get_vm_loss_weight() * view_maker_loss + self.config.disc.adv_loss_weight * gen_loss
@@ -529,13 +530,32 @@ class DoubleViewmakerSystem(ViewmakerSystemDisc):
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
         unnormalized_disc = self.viewmaker(imgs)
-        unnormalized = self.viewmaker2(imgs, return_view_func=True)(unnormalized_disc)
+        unnormalized = imgs-self.viewmaker2(imgs) + unnormalized_disc
+        if self.viewmaker2.clamp:
+            unnormalized = torch.clamp(unnormalized, 0, 1.0)
         # normalize
         views_disc = self.normalize(unnormalized_disc)
         views = self.normalize(unnormalized)
         if with_unnormalized:
             return views, unnormalized, views_disc, unnormalized_disc
         return views, views_disc
+
+    def get_augmentation(self, imgs, with_unnormalized=False):
+        if 'Expert' in self.config.system:
+            raise RuntimeError('Cannot call self.view() with Expert system')
+        unnormalized_disc = self.viewmaker(imgs)
+        unnormalized = imgs-self.viewmaker2(imgs) + unnormalized_disc
+        if self.viewmaker2.clamp:
+            unnormalized = torch.clamp(unnormalized, 0, 1.0)
+
+        # normalize
+        views_disc = self.normalize(unnormalized_disc)
+        views = self.normalize(unnormalized)
+        
+        if with_unnormalized:
+            return  views, unnormalized #, views_disc, unnormalized_disc
+
+        return views #, unnormalized_disc
 
     def make_views(self, batch):
         indices, img, _ = batch

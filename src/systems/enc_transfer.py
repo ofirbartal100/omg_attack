@@ -75,7 +75,7 @@ class TransferSystem(BaseSystem):
         self.is_auroc = (config.dataset.metric == 'auroc')  # this metric should only be computed per epoch
 
     def get_model_weights(self, ckpt):
-        system_weights = torch.load(ckpt, map=self.device)['state_dict']
+        system_weights = torch.load(ckpt, map_location=self.device)['state_dict']
         model_weights = {}
         for name, weight in system_weights.items():
             if "model" in name:
@@ -96,6 +96,9 @@ class TransferSystem(BaseSystem):
         # These numbers were computed using compute_image_dset_stats.py
         if hasattr(self.train_dataset, "normalize"):
             return self.train_dataset.normalize(imgs)
+        elif 'coco' in self.config.dataset.name:
+            mean = torch.tensor([0.485, 0.456, 0.406], device=imgs.device)
+            std = torch.tensor([0.229, 0.224, 0.225], device=imgs.device)
         elif 'cifar' in self.config.dataset:
             mean = torch.tensor([0.491, 0.482, 0.446], device=imgs.device)
             std = torch.tensor([0.247, 0.243, 0.261], device=imgs.device)
@@ -138,7 +141,7 @@ class TransferSystem(BaseSystem):
                 prog_bar=True,
                 sync_dist=True,
             )
-            wandb.log({'transfer/train_metric': metric})
+            # wandb.log({'transfer/train_metric': metric})
             self.metric_fn.reset()
 
     def validation_step(self, batch, batch_idx):
@@ -154,7 +157,8 @@ class TransferSystem(BaseSystem):
         else:
             metric = self.metric_fn(self.post_fn(preds.float()), labels)
             self.log('transfer/val_metric', metric, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        wandb.log({'transfer/val_metric': metric, 'transfer/val_loss': loss})
+
+        # wandb.log({'transfer/val_metric': metric, 'transfer/val_loss': loss})
 
 
     def on_validation_epoch_end(self):
@@ -170,7 +174,7 @@ class TransferSystem(BaseSystem):
                     sync_dist=True,
                     prog_bar=True,
                 )
-                wandb.log({'transfer/train_metric': metric})
+                # wandb.log({'transfer/train_metric': metric})
             except ValueError as error:
                 self.log('transfer/val_metric', 0.0, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
                 print(f'Logging `0.0` due to {error}. Is this from sanity check?')

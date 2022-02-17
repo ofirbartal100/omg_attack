@@ -1,10 +1,12 @@
-ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar10/epoch=102-step=79999.ckpt
+ckpt: /disk2/ofirb/dabs/exp/models/double_vm/epoch=256-step=99999-v1.ckpt
+# ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar_orig/epoch=256-step=99999.ckpt
 data_root: /disk2/ofirb/dabs/data
-gpus: [2] # #######
+gpus: [1] # [5] # #######
 
 exp:
-  base_dir: /disk2/shahafg/Apple/dabs/exp/models
-  name: vm_normed_trans_cifar_transfer_cifar10 # #######
+  base_dir: /disk2/ofirb/dabs/exp/models/
+  name: double_vm_transfer_enc_coco
+  # name: original_vm_transfer_enc_coco
 
 num_workers: 0
 debug: false # #######
@@ -25,5 +27,10 @@ optim:
   momentum: 0.9  # only used for momentum-based optimizers
 
 defaults:
-  - dataset: cifar10_small # #######
-  - model: transformer  # used to set default model when no ckpt is passed in
+  - dataset: mscoco_small # #######
+  - model: resnet_small  # used to set default model when no ckpt is passed in
+
+
+dataset:
+  batch_size: 128
+  low_data: 0.01

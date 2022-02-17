@@ -6,7 +6,7 @@ from torch import nn
 
 from dabs.src.models.base_model import BaseModel
 from viewmaker.src.models import resnet_small
-from flowlp.flpert.models.resnet import resnet18
+# from flowlp.flpert.models.resnet import resnet18
 
 
 class ResNetWrapper(BaseModel):
@@ -31,16 +31,17 @@ class ResNetDabs(BaseModel):
                  out_dim=128,
                  projection_head=False):
         super(ResNetDabs, self).__init__(input_specs)
+        self.emb_dim = out_dim
         if resnet_type == 'resnet_small':
             # ResNet variant for smaller inputs (e.g. CIFAR-10).
             model_class = resnet_small.ResNet18
             encoder_model = model_class(out_dim,
                                         num_channels=input_specs[0].in_channels,
                                         input_size=input_specs[0].input_size[0])
-        elif resnet_type == "resnet18_flowlp":
-            model_class = resnet18
-            encoder_model = model_class(num_classes=out_dim,
-                                        in_channels=input_specs[0].in_channels)
+        # elif resnet_type == "resnet18_flowlp":
+        #     model_class = resnet18
+        #     encoder_model = model_class(num_classes=out_dim,
+        #                                 in_channels=input_specs[0].in_channels)
         else:
             model_class = getattr(torchvision.models, resnet_type)
             encoder_model = model_class(

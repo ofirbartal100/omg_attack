@@ -8,6 +8,7 @@ from dabs.src.datasets.text import glue, mc4, pawsx, wikitext
 DATASET_DICT = {
     # Captioned images.
     'mscoco': mscoco.MSCOCO,
+    'mscoco_small': mscoco.MSCOCOSMALL,
     'mismatched_caption': mscoco.MismatchedCaption,
     'vqa': vqa.VQA,
 

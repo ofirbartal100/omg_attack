@@ -64,7 +64,9 @@ class ViewmakerTransferSystem(BaseSystem):
 
         # Restore checkpoint if provided.
         if config.ckpt is not None:
-            self.load_state_dict(torch.load(config.ckpt)['state_dict'], strict=False)
+            model_weight_dict = self.get_model_weights(config.ckpt)
+            self.model.load_state_dict(model_weight_dict)
+
             for param in self.model.parameters():
                 param.requires_grad = False
 
@@ -89,14 +91,25 @@ class ViewmakerTransferSystem(BaseSystem):
 
     def setup_vm(self, config):
         self.viewmaker = self.load_viewmaker_from_checkpoint(config.vm_ckpt, config.viewmaker.config_path)
+        if config.system == 'DoubleViewmakerSystem':
+            self.viewmaker2 = self.load_viewmaker_from_checkpoint(config.vm_ckpt, config.viewmaker.config_path,vm_name='viewmaker2')
+    
+    def get_model_weights(self, ckpt):
+        system_weights = torch.load(ckpt, map_location=self.device)['state_dict']
+        model_weights = {}
+        for name, weight in system_weights.items():
+            if "model" in name:
+                model_weight_name = name.replace("model.", "")
+                model_weights[model_weight_name] = weight
+        return model_weights
 
-    def load_viewmaker_from_checkpoint(self, system_ckpt, config_path, eval=True):
+    def load_viewmaker_from_checkpoint(self, system_ckpt, config_path, eval=True,vm_name='viewmaker'):
         config_path = config_path
         with open(config_path, 'r') as fp:
             vm_config = OmegaConf.load(fp.name)
 
         sd = torch.load(system_ckpt, map_location=self.device)['state_dict']
-        vm_sd = OrderedDict([(i.replace('viewmaker.', ''), sd[i]) for i in sd if 'viewmaker' in i])
+        vm_sd = OrderedDict([(i.replace(vm_name+'.', ''), sd[i]) for i in sd if vm_name in i])
 
         viewmaker = Viewmaker(
             num_channels=vm_config.train_dataset.IN_CHANNELS,
@@ -138,7 +151,13 @@ class ViewmakerTransferSystem(BaseSystem):
 
     def training_step(self, batch, batch_idx):
         batch, labels = batch[1:-1], batch[-1]
-        vb, uvb = self.view(batch[0], True)
+        p=0
+        uvb = batch[0]
+        i=1
+        while p <= self.config.viewmaker.reroll_prob:
+            vb, uvb = self.view(uvb, True,i)
+            i+=1
+            p = torch.rand(1).item()
         preds = self.forward([vb])
         if self.num_classes == 1:
             preds = preds.squeeze(1)
@@ -202,7 +221,44 @@ class ViewmakerTransferSystem(BaseSystem):
                 print(f'Logging `0.0` due to {error}. Is this from sanity check?')
             self.metric_fn.reset()
 
-    def view(self, imgs, with_unnormalized=False):
+    def view(self, imgs, with_unnormalized=False,i=1):
+        if 'Double' in self.config.system:
+            delta_disc = imgs-self.viewmaker(imgs)
+            unnormalized_disc = imgs+delta_disc/i
+            delta = imgs-self.viewmaker2(imgs)
+            unnormalized = imgs+delta/i
+            unnormalized_combined = imgs + delta_disc/i + delta/i
+            if self.viewmaker2.clamp:
+                unnormalized_combined = torch.clamp(unnormalized_combined, 0, 1.0)
+
+            # normalize
+            views_disc = self.normalize(unnormalized_disc)
+            views = self.normalize(unnormalized)
+            views_combined = self.normalize(unnormalized_combined)
+
+            # cs = torch.cosine_similarity(self.normalize(imgs).view(128,-1),views_combined.view(128,-1)).mean()
+
+
+
+            chosen_view = views_disc
+            chosen_unnormalized = unnormalized_disc
+            # p = torch.rand(1).item()
+            p = 1
+            if p <= 1./3:
+                chosen_view = views_disc
+                chosen_unnormalized = unnormalized_disc
+            elif p <= 2./3:
+                chosen_view = views
+                chosen_unnormalized = unnormalized
+            else:
+                chosen_view = views_combined
+                chosen_unnormalized = unnormalized_combined
+            
+            if with_unnormalized:
+                return  chosen_view, chosen_unnormalized #, views_disc, unnormalized_disc
+
+            return chosen_view #, unnormalized_disc
+
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
         unnormalized = self.viewmaker(imgs)

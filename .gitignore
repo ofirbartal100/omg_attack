@@ -4,6 +4,8 @@ outputs/
 reference/
 .DS_Store
 .vscode/
+*.png
+exp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

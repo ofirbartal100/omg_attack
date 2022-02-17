@@ -196,6 +196,62 @@ class MSCOCO(Dataset):
             InputTokensSpec(seq_len=MSCOCO.SEQ_LEN, vocab_size=MSCOCO.VOCAB_SIZE),
         ]
 
+class MSCOCOSMALL(MSCOCO):
+    # Dataset information.
+    TRANSFORMS = transforms.Compose(
+        [
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+        ]
+    )
+
+    NUM_CLASSES = 80
+    INPUT_SIZE = (32, 32)
+    PATCH_SIZE = (4, 4)
+    IN_CHANNELS = 3
+
+    def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
+        Dataset.__init__(self)
+        self.train = train
+        self.root = os.path.join(base_root, 'captioned_images', 'mscoco')
+
+        if not os.path.isdir(self.root):
+            os.makedirs(self.root)
+
+        if download:
+            self.download_dataset()
+
+        if not self._is_downloaded():
+            raise RuntimeError('Dataset not found. You can use download=True to download it')
+
+        annotations, coco_cat_id_to_label = self.load_coco()
+        paths, bboxes, labels, captions = self.load_images(annotations, coco_cat_id_to_label)
+        self.paths = paths
+        self.bboxes = bboxes
+        self.labels = labels
+        self.captions = captions
+
+    def __getitem__(self, index):
+        path = self.paths[index]
+        label = self.labels[index]
+        bbox = self.bboxes[index]
+
+        image = Image.open(path).convert(mode='RGB')
+        image = self.handle_bboxes(image,bbox)
+
+        if self.TRANSFORMS:
+            image = self.TRANSFORMS(image)
+
+        return index, image.float() , label
+
+
+    @staticmethod
+    def num_classes():
+        return MSCOCOSMALL.NUM_CLASSES
+
+    @staticmethod
+    def spec():
+        return [Input2dSpec(input_size=MSCOCOSMALL.INPUT_SIZE, patch_size=MSCOCOSMALL.PATCH_SIZE, in_channels=MSCOCOSMALL.IN_CHANNELS)]
 
 class MismatchedCaption(MSCOCO):
     '''MSCOCO dataset, adapted for transfer learning.
