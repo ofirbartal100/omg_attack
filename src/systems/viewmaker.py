@@ -5,7 +5,7 @@ import torchmetrics
 from collections import OrderedDict
 
 from torchvision.transforms.functional import resize
-from torchvision.transforms import InterpolationMode
+from torchvision.transforms import InterpolationMode, GaussianBlur
 from pytorch_lightning.loggers import WandbLogger
 from torchvision.utils import make_grid
 import wandb
@@ -23,6 +23,7 @@ from viewmaker.src.utils import utils
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
+
 class ViewmakerSystem(BaseSystem):
     '''System for Shuffled Embedding Detection.
 
@@ -31,6 +32,8 @@ class ViewmakerSystem(BaseSystem):
     '''
 
     def __init__(self, config):
+        self.disp_amnt = 10
+        self.logging_steps = 200
         super().__init__(config)
 
     def setup(self, stage):
@@ -216,27 +219,27 @@ class ViewmakerSystem(BaseSystem):
 
         return opt_list, []
 
-    def wandb_logging(self, emb_dict):
-        logging_steps = 200
-        if isinstance(self.logger, WandbLogger):
-            logging_steps = 200
-
-        # check optimizer index to log images only once
-        # # Handle Tensor (dp) and int (ddp) cases
+    def get_optimizer_index(self, emb_dict):
         if emb_dict['optimizer_idx'].__class__ == int or emb_dict['optimizer_idx'].dim() == 0:
             optimizer_idx = emb_dict['optimizer_idx']
         else:
             optimizer_idx = emb_dict['optimizer_idx'][0]
+        return optimizer_idx
+
+    def wandb_logging(self, emb_dict):
+
+        # check optimizer index to log images only once
+        # # Handle Tensor (dp) and int (ddp) cases
+        optimizer_idx = self.get_optimizer_index(emb_dict)
         if optimizer_idx > 0:
             return
 
-        if self.global_step % logging_steps == 0:
-            amount_images = 10
+        if self.global_step % self.logging_steps == 0:
             img = emb_dict['originals']
 
             if self.train_dataset.__class__.__name__ in natural_images.__dict__:
                 gradcam_viz = []
-                for im in img[:amount_images]:
+                for im in img[:self.disp_amnt]:
                     gradcam_viz.append(self.gradcam(im))
                 gradcam_viz = torch.stack(gradcam_viz)
             else:
@@ -245,8 +248,8 @@ class ViewmakerSystem(BaseSystem):
             unnormalized_view1 = emb_dict['unnormalized_view1']
             unnormalized_view2 = emb_dict['unnormalized_view2']
 
-            diff_heatmap = heatmap_of_view_effect(img[:amount_images], unnormalized_view1[:amount_images])
-            diff_heatmap2 = heatmap_of_view_effect(img[:amount_images], unnormalized_view2[:amount_images])
+            diff_heatmap = heatmap_of_view_effect(img[:self.disp_amnt], unnormalized_view1[:self.disp_amnt])
+            diff_heatmap2 = heatmap_of_view_effect(img[:self.disp_amnt], unnormalized_view2[:self.disp_amnt])
             if img.size(1) > 3:
                 img = img.mean(1, keepdim=True)
                 unnormalized_view1 = unnormalized_view1.mean(1, keepdim=True)
@@ -254,14 +257,14 @@ class ViewmakerSystem(BaseSystem):
                 diff_heatmap = diff_heatmap.mean(1, keepdim=True)
                 diff_heatmap2 = diff_heatmap2.mean(1, keepdim=True)
             cat = torch.cat(
-                [img[:amount_images],
-                 gradcam_viz[:amount_images],
-                 unnormalized_view1[:amount_images],
-                 unnormalized_view2[:amount_images],
+                [img[:self.disp_amnt],
+                 gradcam_viz[:self.disp_amnt],
+                 unnormalized_view1[:self.disp_amnt],
+                 unnormalized_view2[:self.disp_amnt],
                  diff_heatmap,
                  diff_heatmap2,
                  (diff_heatmap - diff_heatmap2).abs()])
-            grid = make_grid(cat, nrow=amount_images)
+            grid = make_grid(cat, nrow=self.disp_amnt)
             grid = resize(torch.clamp(grid, 0, 1.0), (560, 1120), InterpolationMode.NEAREST)
             if isinstance(self.logger, WandbLogger):
                 wandb.log({
@@ -272,7 +275,7 @@ class ViewmakerSystem(BaseSystem):
             else:
                 self.logger.experiment.add_image('original_vs_views', grid, self.global_step)
 
-    def create_viewmaker(self):
+    def create_viewmaker(self, **kwargs):
         view_model = Viewmaker(
             num_channels=self.train_dataset.IN_CHANNELS,
             activation=self.config.model_params.get("generator_activation", 'relu'),
@@ -290,6 +293,7 @@ class ViewmakerSystem(BaseSystem):
             tps=self.config.model_params.get("tps", 0),
             tps_budget=self.config.model_params.get("tps_budget", 0.1),
             aug_proba=self.config.model_params.get("aug_proba", 1),
+            **kwargs
         )
         return view_model
 
@@ -518,78 +522,81 @@ class ViewmakerSystemDisc(ViewmakerSystem):
         return opt_list, []
 
 
-class DoubleViewmakerSystem(ViewmakerSystemDisc):
-
-    def setup(self, stage):
-        super().setup(self)
-        self.viewmaker2 = self.create_viewmaker()
+class DoubleViewmakerMixin:
 
     def configure_optimizers(self):
         opt_list, [] = super().configure_optimizers()
-        opt_list[1].add_param_group({'params': self.viewmaker2.parameters()})
+        for v in self.vm_list[1:]:
+            opt_list[1].add_param_group({'params': v.parameters()})
         return opt_list, []
 
     def view(self, imgs, with_unnormalized=False):
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
-        unnormalized_disc = self.viewmaker(imgs)
-        unnormalized = self.viewmaker2(imgs, return_view_func=True)(unnormalized_disc)
+        # TODO: refactor name to unnormalized_low freq and high freq
+        unnormalized_view = imgs
+        unnormalized_views = []
+        for vm in self.vm_list:
+            unnormalized_view = vm(imgs, return_view_func=True)(unnormalized_view)
+            unnormalized_views.append(unnormalized_view)
         # normalize
-        views_disc = self.normalize(unnormalized_disc)
-        views = self.normalize(unnormalized)
+        normalized_views = [self.normalize(un_view) for un_view in unnormalized_views]
         if with_unnormalized:
-            return views, unnormalized, views_disc, unnormalized_disc
-        return views, views_disc
+            return normalized_views, unnormalized_views
+        return normalized_views
 
     def make_views(self, batch):
         indices, img, _ = batch
-        views1, unnormalized_view1, views1_disc, unnormalized_disc_view1 = self.view(img, True)
-        views2, unnormalized_view2, views2_disc, unnormalized_disc_view2 = self.view(img, True)
+        normalized_views1, unnormalized_views1 = self.view(img, True)
+        normalized_views2, unnormalized_views2 = self.view(img, True)
+        views1, unnormalized_view1 = normalized_views1[-1], unnormalized_views1[-1]
+        views2, unnormalized_view2 = normalized_views2[-1], unnormalized_views2[-1]
         emb_dict = {
             'indices': indices,
             'originals': img,
             'views1': views1,
             'unnormalized_view1': unnormalized_view1,
-            'views1_disc': views1_disc,
-            'unnormalized_disc_view1': unnormalized_disc_view1,
             'views2': views2,
             'unnormalized_view2': unnormalized_view2,
-            'views2_disc': views2_disc,
-            'unnormalizeddisc__view2': unnormalized_disc_view2,
+            "unnormalized_views1": unnormalized_views1,
+            "unnormalized_views2": unnormalized_views2
         }
         return emb_dict
 
-    def ssl_forward(self, batch):
-        emb_dict = self.make_views(batch)
-        emb_dict.update({'view1_embs': self.model.forward([emb_dict["views1"]]),
-                         'view2_embs': self.model.forward([emb_dict["views2"]]),
-                         'view1_disc_embs': self.model.forward([emb_dict["views1_disc"]]),
-                         'view2_disc_embs': self.model.forward([emb_dict["views2_disc"]]),
-                         'orig_embs': self.model.forward([self.normalize(emb_dict["originals"])])})
-        return emb_dict
+    def wandb_logging(self, emb_dict):
+        super().wandb_logging(emb_dict)
+        optimizer_idx = self.get_optimizer_index(emb_dict)
+        if optimizer_idx == 0 and self.global_step % self.logging_steps == 0:
+            views = emb_dict['unnormalized_views1']
+            ref = emb_dict['originals']
+            deltas = []
+            for v in views:
+                deltas.append(heatmap_of_view_effect(v, ref)[:self.disp_amnt])
+                ref = v
+            deltas = torch.cat(deltas)
+            grid = make_grid(deltas, nrow=self.disp_amnt)
+            grid = resize(torch.clamp(grid, 0, 1.0), [112*len(views), 1120], InterpolationMode.NEAREST)
+            if isinstance(self.logger, WandbLogger):
+                wandb.log({
+                    "views_breakdown": wandb.Image(grid,
+                                                     caption=f"Epoch: {self.current_epoch}, Step {self.global_step}")
+                })
 
-    # def objective(self, emb_dict):
-    #     view_maker_loss_weight = self.config.loss_params.view_maker_loss_weight
-    #     loss_function_disc = AdversarialSimCLRLoss(
-    #         embs1=emb_dict['view1_disc_embs'],
-    #         embs2=emb_dict['view2_disc_embs'],
-    #         t=self.config.loss_params.t,
-    #         view_maker_loss_weight=view_maker_loss_weight
-    #     )
-    #     loss_function_double = AdversarialSimCLRLoss(
-    #         embs1=emb_dict['view1_embs'],
-    #         embs2=emb_dict['view2_embs'],
-    #         t=self.config.loss_params.t,
-    #         view_maker_loss_weight=view_maker_loss_weight
-    #     )
-    #     encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = loss_function_disc.get_loss()
-    #     encoder_loss2, encoder_acc2, view_maker_loss2, positive_sim2, negative_sim2 = loss_function_double.get_loss()
-    #     encoder_loss = (encoder_loss + encoder_loss2)/2
-    #     encoder_acc = (encoder_acc + encoder_acc2)/2
-    #     view_maker_loss = (view_maker_loss + view_maker_loss2)/2
-    #     positive_sim = (positive_sim + positive_sim2)/2
-    #     negative_sim = (negative_sim + negative_sim2)/2
-    #     return encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim
+
+class DoubleViewmakerDiscSystem(DoubleViewmakerMixin, ViewmakerSystemDisc):
+
+    def setup(self, stage):
+        self.viewmaker2 = self.create_viewmaker()
+        self.viewmakers = [self.viewmaker, self.viewmaker2]
+
+    # def ssl_forward(self, batch):
+    #     emb_dict = self.make_views(batch)
+    #     emb_dict.update({'view1_embs': self.model.forward([emb_dict["views1"]]),
+    #                      'view2_embs': self.model.forward([emb_dict["views2"]]),
+    #                      'view1_disc_embs': self.model.forward([emb_dict["views1_disc"]]),
+    #                      'view2_disc_embs': self.model.forward([emb_dict["views2_disc"]]),
+    #                      'orig_embs': self.model.forward([self.normalize(emb_dict["originals"])])})
+    #     return emb_dict
 
     def gan_forward(self, batch, step_output, optimizer_idx=2):
         indices, img, _ = batch
@@ -610,6 +617,38 @@ class DoubleViewmakerSystem(ViewmakerSystemDisc):
                     pass
         step_output["fake_score"] = torch.cat([self.disc(views1), self.disc(views2)], dim=0)
         return step_output
+
+
+class DoubleViewmakerFreqSystem(DoubleViewmakerMixin, ViewmakerSystem):
+
+    def setup(self, stage):
+        super().setup(self)
+        blur_func = GaussianBlur(7, sigma=3)
+        self.viewmaker = self.create_viewmaker()
+        self.viewmaker2 = self.create_viewmaker(filter_func=blur_func)
+        self.viewmaker3 = self.create_viewmaker(filter_func=lambda x: x - blur_func(x))
+        self.vm_list = [self.viewmaker, self.viewmaker2, self.viewmaker3]
+
+
+class DoubleViewmakerSpatialSystem(DoubleViewmakerMixin, ViewmakerSystem):
+
+    def setup(self, stage):
+        super().setup(self)
+        self.viewmaker = self.create_viewmaker(filter_func=self.mask_rand_qurater)
+        self.viewmaker2 = self.create_viewmaker(filter_func=lambda x: x - self.mask_rand_qurater(x))
+        self.vm_list = [self.viewmaker, self.viewmaker2]
+
+    @staticmethod
+    def mask_rand_qurater(imb):
+        b, c, h, w = imb.shape
+        rand_q = torch.randint(4, (b,))
+        unfold = torch.nn.Unfold(kernel_size=(h // 2, w // 2), stride=(h // 2, w // 2))
+        fold = torch.nn.Fold(output_size=(h, w), kernel_size=(h // 2, w // 2), stride=(h // 2, w // 2))
+        quarters = unfold(imb)  # (b, h//2 * w//2 * c, 4)
+        for i, q in enumerate(rand_q):
+            quarters[i, :, q] = quarters[i, :, q] * 0
+        masked_imb = fold(quarters)
+        return masked_imb
 
 
 class ViewmakerCoopSystem(ViewmakerSystem):
@@ -639,8 +678,8 @@ class ViewmakerCoopSystem(ViewmakerSystem):
 
 class ViewmakerTransformerSystem(ViewmakerSystem):
 
-    def create_viewmaker(self):
-        viewmaker = get_model(self.config, self.dataset, extra_tokens=1)
+    def create_viewmaker(self, **kwargs):
+        viewmaker = get_model(self.config, self.dataset, extra_tokens=1, **kwargs)
         return ViewmakerTrnasformer(viewmaker,
                                     num_channels=self.train_dataset.IN_CHANNELS,
                                     activation=self.config.model_params.get("generator_activation", 'relu'),
@@ -656,7 +695,8 @@ class ViewmakerTransformerSystem(ViewmakerSystem):
                                     additive_budget=self.config.model_params.get("additive_budget", 0.05),
                                     tps=self.config.model_params.get("tps", 0),
                                     tps_budget=self.config.model_params.get("tps_budget", 0.1),
-                                    aug_proba=self.config.model_params.get("aug_proba", 1),
+                                    aug_proba=self.config.model_params.get("aug_proba", 1)
+                                              ** kwargs,
                                     )
 
     def view(self, imgs, with_unnormalized=False):
