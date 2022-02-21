@@ -16,7 +16,7 @@ from dotmap import DotMap
 import os
 
 
-def get_model(config: DictConfig, dataset_class: Dataset):
+def get_model(config: DictConfig, dataset_class: Dataset, **kwargs):
     '''Retrieves the specified model class, given the dataset class.'''
     spec = dataset_class.spec()
     if config.model.name == 'transformer':
@@ -26,9 +26,10 @@ def get_model(config: DictConfig, dataset_class: Dataset):
     else:
         raise ValueError(f'Encoder {config.model.name} doesn\'t exist.')
     # Retrieve the dataset-specific params.
+    kwargs.update(config.model.kwargs)
     encoder_model = model_class(
         input_specs=spec,
-        **config.model.kwargs, )
+        **kwargs, )
     return encoder_model
 
 

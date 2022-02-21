@@ -4,16 +4,18 @@ import torch
 import torchmetrics
 from collections import OrderedDict
 
+import PIL.Image as Image
 from torchvision.transforms.functional import resize
-from torchvision.transforms import InterpolationMode
+# from torchvision.transforms import InterpolationMode
 from pytorch_lightning.loggers import WandbLogger
 from torchvision.utils import make_grid
 import wandb
 
-from dabs.src.systems.base_system import BaseSystem
+from dabs.src.datasets import natural_images
+from dabs.src.systems.base_system import BaseSystem, get_model
 from viewmaker.src.gans.tiny_pix2pix import TinyP2PDiscriminator
 
-from viewmaker.src.models.viewmaker import Viewmaker
+from viewmaker.src.models.viewmaker import Viewmaker #, ViewmakerTrnasformer
 from viewmaker.src.objectives.memory_bank import MemoryBank
 from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
 from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
@@ -21,7 +23,6 @@ from viewmaker.src.utils import utils
 
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
-
 
 class ViewmakerSystem(BaseSystem):
     '''System for Shuffled Embedding Detection.
@@ -200,7 +201,8 @@ class ViewmakerSystem(BaseSystem):
         view_parameters = self.viewmaker.parameters()
         if view_optim_name == 'adam':
             view_optim = torch.optim.Adam(view_parameters,
-                                          lr=self.config.optim_params.get("viewmaker_learning_rate", 0.001))
+                                          lr=self.config.optim_params.get("viewmaker_learning_rate", 0.001),
+                                          weight_decay=self.config.optim_params.weight_decay)
         elif not view_optim_name or view_optim_name == 'sgd':
             view_optim = torch.optim.SGD(
                 view_parameters,
@@ -233,10 +235,13 @@ class ViewmakerSystem(BaseSystem):
             amount_images = 10
             img = emb_dict['originals']
 
-            gradcam_viz = []
-            for im in img[:amount_images]:
-                gradcam_viz.append(self.gradcam(im))
-            gradcam_viz = torch.stack(gradcam_viz)
+            if self.train_dataset.__class__.__name__ in natural_images.__dict__:
+                gradcam_viz = []
+                for im in img[:amount_images]:
+                    gradcam_viz.append(self.gradcam(im))
+                gradcam_viz = torch.stack(gradcam_viz)
+            else:
+                gradcam_viz = torch.tensor([]).to(self.device)
 
             unnormalized_view1 = emb_dict['unnormalized_view1']
             unnormalized_view2 = emb_dict['unnormalized_view2']
@@ -258,7 +263,7 @@ class ViewmakerSystem(BaseSystem):
                  diff_heatmap2,
                  (diff_heatmap - diff_heatmap2).abs()])
             grid = make_grid(cat, nrow=amount_images)
-            grid = resize(torch.clamp(grid, 0, 1.0), (560, 1120), InterpolationMode.NEAREST)
+            grid = resize(torch.clamp(grid, 0, 1.0), (560, 1120), Image.NEAREST)
             if isinstance(self.logger, WandbLogger):
                 wandb.log({
                     "original_vs_views": wandb.Image(grid,
@@ -434,8 +439,7 @@ class ViewmakerSystemDisc(ViewmakerSystem):
         views1, views2 = step_output["views1"], step_output["views2"]
 
         img.requires_grad = True
-        # self.disc = self.disc.to(self.device)
-        step_output['disc_r1_penalty'] = 0.0
+        step_output['disc_r1_penalty'] = torch.tensor([0.0], device=self.device)
         if optimizer_idx == 2:
             step_output["real_score"] = self.disc(self.normalize(img))
             if self.disc.wgan:
@@ -487,9 +491,10 @@ class ViewmakerSystemDisc(ViewmakerSystem):
 
     def on_validation_model_eval(self) -> None:
         """Sets the model to eval during the val loop."""
-        self.trainer.model.eval()
-        self.trainer.model.module.module.disc.train()
-        self.trainer.model.module.module.viewmaker.train()
+
+        self.model.eval()
+        self.disc.train()
+        self.viewmaker.train()
 
     def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,
                        using_native_amp=False, using_lbfgs=False):
@@ -615,7 +620,7 @@ class DoubleViewmakerSystem(ViewmakerSystemDisc):
 
         img.requires_grad = True
         # self.disc = self.disc.to(self.device)
-        step_output['disc_r1_penalty'] = 0.0
+        step_output['disc_r1_penalty'] = torch.tensor([0.0], device=self.device)
         if optimizer_idx == 2:
             step_output["real_score"] = self.disc(self.normalize(img))
             if self.disc.wgan:
@@ -651,3 +656,54 @@ class ViewmakerCoopSystem(ViewmakerSystem):
             metrics = None
 
         return [loss, emb_dict, metrics]
+
+
+# class ViewmakerTransformerSystem(ViewmakerSystem):
+
+#     def create_viewmaker(self):
+#         viewmaker = get_model(self.config, self.dataset, extra_tokens=1)
+#         return ViewmakerTrnasformer(viewmaker,
+#                                     num_channels=self.train_dataset.IN_CHANNELS,
+#                                     activation=self.config.model_params.get("generator_activation", 'relu'),
+#                                     clamp=self.config.model_params.get("clamp_views", True),
+#                                     frequency_domain=self.config.model_params.get("spectral", False),
+#                                     downsample_to=self.config.model_params.get("viewmaker_downsample", False),
+#                                     num_res_blocks=self.config.model_params.get("num_res_blocks", 5),
+#                                     use_budget=self.config.model_params.get("use_budget", True),
+#                                     budget_aware=self.config.model_params.get("budget_aware", False),
+#                                     multiplicative=self.config.model_params.get("multiplicative", 0),
+#                                     multiplicative_budget=self.config.model_params.get("multiplicative_budget", 0.25),
+#                                     additive=self.config.model_params.get("additive", 1),
+#                                     additive_budget=self.config.model_params.get("additive_budget", 0.05),
+#                                     tps=self.config.model_params.get("tps", 0),
+#                                     tps_budget=self.config.model_params.get("tps_budget", 0.1),
+#                                     aug_proba=self.config.model_params.get("aug_proba", 1),
+#                                     )
+
+#     def view(self, imgs, with_unnormalized=False):
+#         if 'Expert' in self.config.system:
+#             raise RuntimeError('Cannot call self.view() with Expert system')
+#         imgs = self.normalize(imgs)
+#         with torch.no_grad():
+#             emb = self.model.embed([imgs])
+#         views = self.viewmaker(emb, return_view_func=True)
+#         if with_unnormalized:
+#             return views, views
+#         return views
+
+#     def ssl_forward(self, batch):
+#         emb_dict = self.make_views(batch)
+#         x = [batch[1]]
+#         x[0] = self.normalize(x[0])
+#         emb = self.model.embed(x)
+#         emb_dict["views1"] = emb_dict["views1"](emb)
+#         emb_dict["views2"] = emb_dict["views2"](emb)
+#         emb_dict["unnormalized_view1"] = emb_dict["views1"]
+#         emb_dict["unnormalized_view2"] = emb_dict["views2"]
+#         emb_dict.update({'view1_embs': self.model.encode(emb_dict["views1"]),
+#                          'view2_embs': self.model.encode(emb_dict["views2"]),
+#                          'orig_embs': self.model.encode(emb)})
+#         return emb_dict
+
+#     def wandb_logging(self, emb_dict):
+#         pass

@@ -78,7 +78,7 @@ class TransferSystem(BaseSystem):
         system_weights = torch.load(ckpt, map_location=self.device)['state_dict']
         model_weights = {}
         for name, weight in system_weights.items():
-            if "model" in name:
+            if name.startswith("model."):
                 model_weight_name = name.replace("model.", "")
                 model_weights[model_weight_name] = weight
         return model_weights

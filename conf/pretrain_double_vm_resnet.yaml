@@ -1,7 +1,7 @@
 algorithm: double_viewmaker
 data_root: /disk2/ofirb/dabs/data
 # data_root: /home/dabs_vm/data
-gpus: [0]
+gpus: [0,2,3,5]
 system: DoubleViewmakerSystem
 
 debug: false
@@ -10,7 +10,7 @@ num_workers: null # #########
 exp:
   base_dir: /disk2/shahafg/Apple/dabs/exp/models
 #  base_dir: /home/dabs_vm/shahaf/dabs/exp/models
-  name: double_vm_cifar10 - resnet_small (b0.05, b0.05)  # #########
+  name: double_vm_libri_small_64 - resnet_small (b0.05, b0.05)  # #########
 
 trainer:
   weights_summary: top
@@ -31,7 +31,7 @@ optim:
   momentum: 0.9  # only used for momentum-based optimizers
 
 defaults:
-  - dataset: cifar10_small # #########
+  - dataset: librispeech_transfer # #########
   - model: resnet_small # ########)#
 #  - disc: tiny_p2p_disc
 
