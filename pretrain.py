@@ -3,7 +3,7 @@
 import hydra
 
 
-@hydra.main(config_path='conf', config_name='pretrain_double_vm_resnet')
+@hydra.main(config_path='conf', config_name='pretrain_double_vm_freq_resnet')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -48,8 +48,12 @@ def run(config):
         system = viewmaker.ViewmakerCoopSystem(config)
     elif config.algorithm == 'viewmaker_disc':
         system = viewmaker.ViewmakerSystemDisc(config)
-    elif config.algorithm == 'double_viewmaker':
-        system = viewmaker.DoubleViewmakerSystem(config)
+    elif config.algorithm == 'double_viewmaker_disc':
+        system = viewmaker.DoubleViewmakerDiscSystem(config)
+    elif config.algorithm == 'double_viewmaker_freq':
+        system = viewmaker.DoubleViewmakerFreqSystem(config)
+    elif config.algorithm == 'double_viewmaker_spatial':
+        system = viewmaker.DoubleViewmakerSpatialSystem(config)
     elif config.algorithm == 'viewmaker_transformer':
         system = viewmaker.ViewmakerTransformerSystem(config)
     else:
