@@ -3,7 +3,7 @@
 import hydra
 
 
-@hydra.main(config_path='conf', config_name='pretrain_double_vm_freq_resnet')
+@hydra.main(config_path='conf', config_name='pretrain_double_vm_schyzo_freq_resnet')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -56,6 +56,8 @@ def run(config):
         system = viewmaker.DoubleViewmakerSpatialSystem(config)
     elif config.algorithm == 'viewmaker_transformer':
         system = viewmaker.ViewmakerTransformerSystem(config)
+    elif config.algorithm == 'double_viewmaker_schyzo_freq':
+        system = viewmaker.DoubleViewmakerSchyzoFreqSystem(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 

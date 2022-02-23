@@ -1,6 +1,6 @@
 algorithm: viewmaker
 data_root: /disk2/ofirb/dabs/data
-gpus: [5]
+gpus: [6]
 system: ViewmakerSystem
 
 debug: false

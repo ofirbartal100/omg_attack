@@ -1,8 +1,8 @@
-algorithm: double_viewmaker_freq
+algorithm: double_viewmaker_schyzo_freq
 data_root: /disk2/ofirb/dabs/data
 # data_root: /home/dabs_vm/data
-gpus: [2]
-system: DoubleViewmakerFreqSystem
+gpus: [4]
+system: DoubleViewmakerSchyzoFreqSystem
 
 debug: false
 num_workers: null # #########
@@ -10,7 +10,7 @@ num_workers: null # #########
 exp:
   base_dir: /disk2/shahafg/Apple/dabs/exp/models
 #  base_dir: /home/dabs_vm/shahaf/dabs/exp/models
-  name: multi_vm_freq_orig_cifar - resnet_small w0.1 # #########
+  name: multi_vm_schyzo_freq_orig_cifar - resnet_small w0.1 # #########
 
 trainer:
   weights_summary: top
@@ -71,8 +71,8 @@ model_params:
   viewmaker_downsample: False
   use_budget: True
   aug_proba: 1
-  hf_weight: 0.1
-  lf_weight: 0.1
+  hf_weight: 0.01
+  lf_weight: 0.01
 
 loss_params:
   view_maker_loss_weight: 1

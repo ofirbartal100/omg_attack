@@ -16,7 +16,7 @@ from dabs.src.systems.base_system import BaseSystem, get_model
 from dabs.src.models.dct_losses import HighFreqPenaltyLoss, LowFreqPenaltyLoss
 from viewmaker.src.gans.tiny_pix2pix import TinyP2PDiscriminator
 
-from viewmaker.src.models.viewmaker import Viewmaker #, ViewmakerTrnasformer
+from viewmaker.src.models.viewmaker import Viewmaker, ViewmakerTrnasformer
 from viewmaker.src.objectives.memory_bank import MemoryBank
 from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
 from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
@@ -83,8 +83,8 @@ class ViewmakerSystem(BaseSystem):
             metrics = {'view_maker_loss': view_maker_loss}
             loss = view_maker_loss
             if not self.delta_crit is None:
-                delta_crit_loss = self.delta_crit(emb_dict['unnormalized_view1']-emb_dict['originals'])
-                delta_crit_loss2 = self.delta_crit(emb_dict['unnormalized_view2']-emb_dict['originals'])
+                delta_crit_loss = self.delta_crit(emb_dict['unnormalized_view1'] - emb_dict['originals'])
+                delta_crit_loss2 = self.delta_crit(emb_dict['unnormalized_view2'] - emb_dict['originals'])
                 loss = loss + delta_crit_loss + delta_crit_loss2
         else:
             loss = None
@@ -315,7 +315,7 @@ class ViewmakerSystem(BaseSystem):
         return views
 
     def get_augmentation(self, imgs, with_unnormalized=False):
-        return self.view(imgs,with_unnormalized=with_unnormalized)
+        return self.view(imgs, with_unnormalized=with_unnormalized)
 
     def normalize(self, imgs):
         # These numbers were computed using compute_image_dset_stats.py
@@ -394,7 +394,8 @@ class ViewmakerSystem(BaseSystem):
             cam = cam / np.max(cam)
             return np.uint8(255 * cam)
 
-        res = show_cam_on_image(img.detach().cpu().permute(1, 2, 0).numpy(), grayscale_cam, use_rgb=True, colormap=cv2.COLORMAP_JET) / 255
+        res = show_cam_on_image(img.detach().cpu().permute(1, 2, 0).numpy(), grayscale_cam, use_rgb=True,
+                                colormap=cv2.COLORMAP_JET) / 255
         return torch.from_numpy(res).to(input_tensor.device).permute(2, 0, 1)
 
 
@@ -545,44 +546,48 @@ class DoubleViewmakerMixin:
         # TODO: refactor name to unnormalized_low freq and high freq
         unnormalized_view = imgs
         unnormalized_views = []
+        deltas = []
         for vm in self.vm_list:
-            unnormalized_view = vm(imgs, return_view_func=True)(unnormalized_view)
+            unnormalized_view, delta = vm(imgs, return_view_func=True)(unnormalized_view)
             unnormalized_views.append(unnormalized_view)
+            deltas.append(delta)
         # normalize
         normalized_views = [self.normalize(un_view) for un_view in unnormalized_views]
         if with_unnormalized:
-            return normalized_views, unnormalized_views
+            return normalized_views, unnormalized_views, deltas
         return normalized_views
 
     def get_augmentation(self, imgs, with_unnormalized=False):
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
         unnormalized_disc = self.viewmaker(imgs)
-        unnormalized = imgs-self.viewmaker2(imgs) + unnormalized_disc
+        unnormalized = imgs - self.viewmaker2(imgs) + unnormalized_disc
         if self.viewmaker2.clamp:
             unnormalized = torch.clamp(unnormalized, 0, 1.0)
 
         # normalize
         views_disc = self.normalize(unnormalized_disc)
         views = self.normalize(unnormalized)
-        
-        if with_unnormalized:
-            return  views, unnormalized #, views_disc, unnormalized_disc
 
-        return views #, unnormalized_disc
+        if with_unnormalized:
+            return views, unnormalized  # , views_disc, unnormalized_disc
+
+        return views  # , unnormalized_disc
 
     def make_views(self, batch):
         indices, img, _ = batch
-        normalized_views1, unnormalized_views1 = self.view(img, True)
-        normalized_views2, unnormalized_views2 = self.view(img, True)
+        normalized_views1, unnormalized_views1, deltas1 = self.view(img, True)
+        normalized_views2, unnormalized_views2, deltas2 = self.view(img, True)
         views1, unnormalized_view1 = normalized_views1[-1], unnormalized_views1[-1]
         views2, unnormalized_view2 = normalized_views2[-1], unnormalized_views2[-1]
         emb_dict = {
             'indices': indices,
             'originals': img,
             'views1': views1,
+            'deltas1': deltas1,
             'unnormalized_view1': unnormalized_view1,
             'views2': views2,
+            'deltas2': deltas2,
             'unnormalized_view2': unnormalized_view2,
             "unnormalized_views1": unnormalized_views1,
             "unnormalized_views2": unnormalized_views2
@@ -601,14 +606,14 @@ class DoubleViewmakerMixin:
                 ref = v
             deltas = torch.cat(deltas)
             grid = make_grid(deltas, nrow=self.disp_amnt)
-            grid = resize(torch.clamp(grid, 0, 1.0), [112*len(views), 1120], Image.NEAREST)
+            grid = resize(torch.clamp(grid, 0, 1.0), [112 * len(views), 1120], Image.NEAREST)
             if isinstance(self.logger, WandbLogger):
                 wandb.log({
                     "views_breakdown": wandb.Image(grid,
-                                                     caption=f"Epoch: {self.current_epoch}, Step {self.global_step}")
+                                                   caption=f"Epoch: {self.current_epoch}, Step {self.global_step}")
                 })
 
-    
+
 class DoubleViewmakerDiscSystem(DoubleViewmakerMixin, ViewmakerSystemDisc):
 
     def setup(self, stage):
@@ -644,6 +649,7 @@ class DoubleViewmakerDiscSystem(DoubleViewmakerMixin, ViewmakerSystemDisc):
         step_output["fake_score"] = torch.cat([self.disc(views1), self.disc(views2)], dim=0)
         return step_output
 
+
 class DoubleViewmakerFreqSystem(DoubleViewmakerMixin, ViewmakerSystem):
 
     def setup(self, stage):
@@ -652,7 +658,9 @@ class DoubleViewmakerFreqSystem(DoubleViewmakerMixin, ViewmakerSystem):
         self.viewmaker2 = self.create_viewmaker()
         self.viewmaker3 = self.create_viewmaker()
         self.vm_list = [self.viewmaker, self.viewmaker2, self.viewmaker3]
-        self.vm_crit_list = [None,HighFreqPenaltyLoss(),LowFreqPenaltyLoss()]
+        self.vm_crit_list = [(None, 1),
+                             (HighFreqPenaltyLoss(), self.config.model_params.hf_weight),
+                             (LowFreqPenaltyLoss(), self.config.model_params.lf_weight)]
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         emb_dict = self.ssl_forward(batch)
@@ -666,16 +674,74 @@ class DoubleViewmakerFreqSystem(DoubleViewmakerMixin, ViewmakerSystem):
         elif optimizer_idx == 1:
             metrics = {'view_maker_loss': view_maker_loss}
             loss = view_maker_loss
-            for i,crit in enumerate(self.vm_crit_list):
+            for i, (crit, w) in enumerate(self.vm_crit_list):
                 if not crit is None:
-                    delta_crit_loss = crit(emb_dict['unnormalized_views1'][i]-emb_dict['unnormalized_views1'][i-1])
-                    delta_crit_loss2 = crit(emb_dict['unnormalized_views2'][i]-emb_dict['unnormalized_views2'][i-1])
-                    loss = loss + delta_crit_loss + delta_crit_loss2
+                    delta_crit_loss1 = crit(emb_dict['deltas1'][i])
+                    delta_crit_loss2 = crit(emb_dict['deltas2'][i])
+                    delta_crit_loss = (delta_crit_loss1 + delta_crit_loss2) / 2 * w
+                    loss = loss + delta_crit_loss
+                    metrics[crit.__class__.__name__] = delta_crit_loss
+            metrics["total_loss"] = loss
         else:
             loss = None
             metrics = None
 
         return [loss, emb_dict, metrics]
+
+
+class DoubleViewmakerSchyzoFreqSystem(DoubleViewmakerMixin, ViewmakerSystem):
+
+    def setup(self, stage):
+        super().setup(self)
+        self.viewmaker = self.create_viewmaker()
+        self.viewmaker2 = self.create_viewmaker()
+        self.vm_list = [self.viewmaker, self.viewmaker2]
+        self.vm_crit_list = [(HighFreqPenaltyLoss(), self.config.model_params.hf_weight),
+                             (LowFreqPenaltyLoss(), self.config.model_params.lf_weight)]
+
+    def view(self, imgs, with_unnormalized=False):
+        if 'Expert' in self.config.system:
+            raise RuntimeError('Cannot call self.view() with Expert system')
+        # TODO: refactor name to unnormalized_low freq and high freq
+        half_w = imgs.size(-1) // 2
+        mask = torch.cat([torch.zeros_like(imgs)])
+        mask[:, :, :, :half_w] = 1
+        unnormalized_view1, delta1 = self.viewmaker(imgs, return_view_func=True)(imgs)
+        unnormalized_view2, delta2 = self.viewmaker(imgs, return_view_func=True)(imgs)
+        unnormalized_view = unnormalized_view1 * mask + unnormalized_view2 * (1 - mask)
+        delta1, delta2 = delta1[:, :, :, :half_w], delta2[:, :, :, half_w:]
+        # normalize
+        normalized_view = self.normalize(unnormalized_view)
+        if with_unnormalized:
+            return [normalized_view], [unnormalized_view], [delta1, delta2]
+        return [normalized_view]
+
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        emb_dict = self.ssl_forward(batch)
+        encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = self.objective(emb_dict)
+        emb_dict['optimizer_idx'] = torch.tensor(optimizer_idx, device=self.device)
+
+        if optimizer_idx == 0:
+            metrics = {'encoder_loss': encoder_loss, "train_acc": encoder_acc, "positive_sim": positive_sim,
+                       "negative_sim": negative_sim}
+            loss = encoder_loss
+        elif optimizer_idx == 1:
+            metrics = {'view_maker_loss': view_maker_loss}
+            loss = view_maker_loss
+            for i, (crit, w) in enumerate(self.vm_crit_list):
+                if not crit is None:
+                    delta_crit_loss1 = crit(emb_dict['deltas1'][i])
+                    delta_crit_loss2 = crit(emb_dict['deltas2'][i])
+                    delta_crit_loss = (delta_crit_loss1 + delta_crit_loss2) / 2 * w
+                    loss = loss + delta_crit_loss
+                    metrics[crit.__class__.__name__] = delta_crit_loss
+            metrics["total_loss"] = loss
+        else:
+            loss = None
+            metrics = None
+
+        return [loss, emb_dict, metrics]
+
 
 # class DoubleViewmakerFreqSystem(DoubleViewmakerMixin, ViewmakerSystem):
 
