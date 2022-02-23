@@ -3,7 +3,7 @@
 import hydra
 
 
-@hydra.main(config_path='conf', config_name='pretrain_double_vm_freq_resnet')
+@hydra.main(config_path='conf', config_name='pretrain_vm_transformer')
 def run(config):
     # Deferred imports for faster tab completion
     import os

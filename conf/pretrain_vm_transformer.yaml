@@ -1,6 +1,6 @@
 algorithm: viewmaker
 data_root: /disk2/ofirb/dabs/data
-gpus: [5]
+gpus: [7]
 system: ViewmakerSystem
 
 debug: false
@@ -17,7 +17,7 @@ trainer:
   limit_val_batches: 1.0
   resume_from_checkpoint: null
   precision: 32  # set to 16 for O1 mixed precision, 32 for O0 full precision
-  max_steps: 100_000
+  max_steps: 400_000
   gradient_clip_val: 0
   distributed_backend: dp
   model_checkpoint_freq: 20000
@@ -33,10 +33,10 @@ defaults:
   - model: transformer
 
 dataset:
-  batch_size: 64
+  batch_size: 128
 
 optim_params: 
-  batch_size: 64
+  batch_size: 128
   learning_rate: 0.03
   momentum: 0.9
   weight_decay: 1e-4

@@ -104,7 +104,8 @@ class DomainAgnosticTransformer(BaseModel):
         dim_head: int = 64,
         dropout: float = 0.,
         emb_dropout: float = 0.,
-        extra_tokens: int = 0
+        extra_tokens: int = 0,
+        pretrained_embed: str = None
     ):
         assert embed_dim == dim, f'Different embed dim than model dim is currently not allowed'
 
@@ -127,6 +128,13 @@ class DomainAgnosticTransformer(BaseModel):
             nn.LayerNorm(dim),
             nn.Linear(dim, out_dim),
         )
+
+        #### load pretrained
+        if pretrained_embed is not None:
+            ckpt = torch.load(pretrained_embed)["state_dict"]
+            embed_modules_ckpt = {k.replace("model.embed_modules.", ""): v for k, v in ckpt.items() if "embed_modules" in k and "viewmaker" not in k}
+            self.embed_modules.load_state_dict(embed_modules_ckpt)
+            self.pos_embedding = nn.Parameter([v for k, v in ckpt.items() if "pos_embedding" in k and "viewmaker" not in k][0])
 
     def encode(self, x: torch.tensor, prepool=False, prehead=False):
         # Concatenate CLS token and add positional embeddings.

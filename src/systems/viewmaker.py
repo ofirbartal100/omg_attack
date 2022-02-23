@@ -32,9 +32,9 @@ class ViewmakerSystem(BaseSystem):
     '''
 
     def __init__(self, config):
+        super().__init__(config)
         self.disp_amnt = 10
         self.logging_steps = 200
-        super().__init__(config)
 
     def setup(self, stage):
         super().setup(self)
@@ -231,7 +231,7 @@ class ViewmakerSystem(BaseSystem):
         # check optimizer index to log images only once
         # # Handle Tensor (dp) and int (ddp) cases
         optimizer_idx = self.get_optimizer_index(emb_dict)
-        if optimizer_idx > 0:
+        if optimizer_idx > 0 or "transformer" in self.model.__class__.__name__.lower():
             return
 
         if self.global_step % self.logging_steps == 0:
@@ -575,11 +575,11 @@ class DoubleViewmakerMixin:
                 ref = v
             deltas = torch.cat(deltas)
             grid = make_grid(deltas, nrow=self.disp_amnt)
-            grid = resize(torch.clamp(grid, 0, 1.0), [112*len(views), 1120], InterpolationMode.NEAREST)
+            grid = resize(torch.clamp(grid, 0, 1.0), [112 * len(views), 1120], InterpolationMode.NEAREST)
             if isinstance(self.logger, WandbLogger):
                 wandb.log({
                     "views_breakdown": wandb.Image(grid,
-                                                     caption=f"Epoch: {self.current_epoch}, Step {self.global_step}")
+                                                   caption=f"Epoch: {self.current_epoch}, Step {self.global_step}")
                 })
 
 

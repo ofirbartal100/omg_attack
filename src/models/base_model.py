@@ -4,7 +4,8 @@ from typing import Any, Dict, List, Sequence
 import torch
 import torch.nn as nn
 
-from dabs.src.models.embedding_modules import Input1dToEmbeddings, Input2dToEmbeddings, Input3dToEmbeddings, InputTokensToEmbeddings
+from dabs.src.models.embedding_modules import Input1dToEmbeddings, Input2dToEmbeddings, Input3dToEmbeddings, \
+    InputTokensToEmbeddings
 
 
 class BaseModel(ABC, nn.Module):
@@ -25,9 +26,9 @@ class BaseModel(ABC, nn.Module):
     '''
 
     def __init__(
-        self,
-        input_specs: List[Dict[str, Any]],
-        embed_dim: int = 256,
+            self,
+            input_specs: List[Dict[str, Any]],
+            embed_dim: int = 256,
     ):
         super().__init__()
 
