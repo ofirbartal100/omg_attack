@@ -45,6 +45,7 @@ DATASET_DICT = {
     'google_speech': google_speech.GoogleSpeechCommands,
     'librispeech': librispeech.LibriSpeech,
     'librispeech_transfer': librispeech.LibriSpeechTransfer,
+    'librispeech_labeled': librispeech.LibriSpeechLabeled,
     'voxceleb1': voxceleb1.VoxCeleb1,
 
     # Text.
@@ -71,9 +72,11 @@ DATASET_DICT = {
 
 PRETRAINING_DATASETS = [
     'cifar10_small', 'imagenet', 'pamap2', 'pamap2_spectrogram', 'mscoco', 'wikitext103', 'chexpert', 'librispeech', 'vqa',
-    'mc4', 'ffhq112', 'ffhq64', 'ffhq32'
+    'mc4', 'ffhq112', 'ffhq64', 'ffhq32', 'librispeech_labeled',
 ]
-UNLABELED_DATASETS = ['wikitext103', 'librispeech', 'mc4']
+UNLABELED_DATASETS = ['wikitext103',
+                      'librispeech',
+                      'mc4']
 MULTILABEL_DATASETS = ['chexpert', 'vqa']
 
 TRANSFER_DATASETS = [
@@ -111,6 +114,7 @@ TRANSFER_DATASETS = [
     'fluent_speech_object',
     'google_speech',
     'librispeech_transfer',
+    'librispeech_labeled',
     'voxceleb1',
 
     # Text.

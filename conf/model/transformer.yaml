@@ -11,5 +11,5 @@ kwargs:
   dim_head: 64
   dropout: 0.1
   emb_dropout: 0.1
-  pretrained_embed: "/home/shahafg/shared/Apple/dabs/exp/models/vm_full_trans_cifar10/modified_924.ckpt"
+  pretrained_embed: null
 

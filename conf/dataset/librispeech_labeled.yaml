@@ -2,6 +2,6 @@
 loss: cross_entropy
 metric: accuracy
 
-name: pamap2_spectrogram
-batch_size: 256
-num_workers: 2
+name: librispeech_labeled
+batch_size: 64
+num_workers: 4

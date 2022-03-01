@@ -64,8 +64,14 @@ class TransferSystem(BaseSystem):
         if num_classes is None:
             num_classes = 1  # maps to 1 output channel for regression
         self.num_classes = num_classes
-        self.linear = torch.nn.Linear(self.model.emb_dim, num_classes)
-
+        ##### sample run to decide size ####
+        self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True)
+        embs = self.model.forward([self.train_dataset[0][1].unsqueeze(0)],
+                                  prehead=self.config.model_params.prehead,
+                                  prepool=self.config.model_params.prepool)
+        last_dim = embs.flatten(1).size(-1)
+        ######################################
+        self.linear = torch.nn.Linear(last_dim, num_classes)
         # Initialize loss and metric functions.
         self.loss_fn, self.metric_fn, self.post_fn = get_loss_and_metric_fns(
             config.dataset.loss,
@@ -75,7 +81,7 @@ class TransferSystem(BaseSystem):
         self.is_auroc = (config.dataset.metric == 'auroc')  # this metric should only be computed per epoch
 
     def get_model_weights(self, ckpt):
-        system_weights = torch.load(ckpt, map=self.device)['state_dict']
+        system_weights = torch.load(ckpt, map_location=self.device)['state_dict']
         model_weights = {}
         for name, weight in system_weights.items():
             if "model" in name:
@@ -88,8 +94,10 @@ class TransferSystem(BaseSystem):
 
     def forward(self, batch):
         batch[0] = self.normalize(batch[0])
-        embs = self.model.forward(batch, prehead=True)
-        preds = self.linear(embs)
+        embs = self.model.forward(batch,
+                                  prehead=self.config.model_params.prehead,
+                                  prepool=self.config.model_params.prepool)
+        preds = self.linear(embs.flatten(1))
         return preds
 
     def normalize(self, imgs):
@@ -155,7 +163,6 @@ class TransferSystem(BaseSystem):
             metric = self.metric_fn(self.post_fn(preds.float()), labels)
             self.log('transfer/val_metric', metric, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         wandb.log({'transfer/val_metric': metric, 'transfer/val_loss': loss})
-
 
     def on_validation_epoch_end(self):
         '''Log auroc at end of epoch here to guarantee presence of every class.'''

@@ -1,12 +1,24 @@
-ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar10/epoch=102-step=79999.ckpt
+#ckpt: /home/shahafg/shared/Apple/dabs/exp/models/vm_trans_cifar10/epoch=820-step=319999.ckpt                    # vm trans cifar
+#ckpt: "/home/shahafg/shared/Apple/dabs/exp/models/expert_cifar10 - transformer/epoch=974-step=379999.ckpt"      # expert trans cifar
+ckpt: "/home/shahafg/shared/Apple/dabs/exp/models/vm_disc_cifar10/epoch=256-step=99999.ckpt"
+
+#ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar_orig/epoch=256-step=99999.ckpt                                                 # vm orig cifar
+#ckpt: "/disk2/shahafg/Apple/dabs/exp/models/double_vm_cifar10 - resnet_small (b0.05, b0.05)/epoch=256-step=99999-v1.ckpt"  # double vm cifar
+
+#ckpt: "/home/shahafg/shared/Apple/dabs/exp/models/vm_orig_pamap - b0.05/epoch=102-step=39999.ckpt"                         # vm orig pamap
+#ckpt: "/disk2/shahafg/Apple/dabs/exp/models/double_vm_pamap - resnet_small (b0.05, b0.05)/epoch=51-step=19999.ckpt"        # vm double pamap
+#ckpt: "/home/dabs_vm/shahaf/dabs/exp/models/double_pamap/double_pamap_ckpt.ckpt"                                           # vm double pamap (gcp)
+
 data_root: /disk2/ofirb/dabs/data
+#data_root: /ssd/dabs_data
 gpus: [2] # #######
 
 exp:
   base_dir: /disk2/shahafg/Apple/dabs/exp/models
-  name: vm_normed_trans_cifar_transfer_cifar10 # #######
+#  base_dir: /home/dabs_vm/shahaf/dabs/exp/models
+  name: vm_disc_cifar_transfer_cifar # #######
 
-num_workers: 0
+num_workers: null
 debug: false # #######
 
 trainer:
@@ -18,6 +30,10 @@ trainer:
   max_epochs: 100
   gradient_clip_val: 0
 
+model_params:
+  prepool: true
+  prehead: true
+
 optim:
   name: adam
   lr: 0.0001
@@ -26,4 +42,4 @@ optim:
 
 defaults:
   - dataset: cifar10_small # #######
-  - model: transformer  # used to set default model when no ckpt is passed in
+  - model: resnet_small  # used to set default model when no ckpt is passed in

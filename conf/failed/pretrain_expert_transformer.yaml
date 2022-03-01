@@ -1,14 +1,14 @@
-algorithm: viewmaker
+algorithm: expert
 data_root: /disk2/ofirb/dabs/data
-gpus: [7]
-system: ViewmakerSystem
+gpus: [1]
+system: ExpertSystem
 
 debug: false
 num_workers: null
 
 exp:
   base_dir: /home/shahafg/shared/Apple/dabs/exp/models
-  name: vm_trans_cifar10
+  name: expert_cifar10 - resnet_small
 
 trainer:
   weights_summary: top
@@ -19,23 +19,40 @@ trainer:
   precision: 32  # set to 16 for O1 mixed precision, 32 for O0 full precision
   max_steps: 400_000
   gradient_clip_val: 0
-  distributed_backend: dp
+  distributed_backend: null
   model_checkpoint_freq: 20000
 
+### transformer
+#optim:
+#  name: adam
+#  lr: 0.0001
+#  weight_decay: 0.0001
+#  momentum: 0.9  # only used for momentum-based optimizers
+
+### resnet
 optim:
-  name: adam
-  lr: 0.0001
+  name: sgd
+  lr: 0.03
   weight_decay: 0.0001
   momentum: 0.9  # only used for momentum-based optimizers
 
 defaults:
   - dataset: cifar10_small
-  - model: transformer
+  - model: resnet_small
+
+disc:
+  lr: 0.0001
+  gan_warmup: 1
+  adv_loss_weight: 1 # #########
+  wgan: false # #########
+  r1_penalty_weight: 0.000001
+  conv_blocks: 4
+  dis_skip_steps: 0
 
 dataset:
   batch_size: 128
 
-optim_params: 
+optim_params:
   batch_size: 128
   learning_rate: 0.03
   momentum: 0.9
@@ -44,9 +61,9 @@ optim_params:
   patience: 1000
   num_view_update: 1
   viewmaker_optim: adam
-  viewmaker_learning_rate: 0.001
+  viewmaker_learning_rate: 0.0001
 
-model_params: 
+model_params:
   dimensions: 3
   out_dim: 128
   resnet: true
@@ -62,14 +79,15 @@ model_params:
   tps: 0
   tps_budget: 0.05
   budget_aware: false
-  clamp_views: true
+  clamp_views: false
   generator_activation: relu
   spectral: False
   viewmaker_downsample: False
   use_budget: True
   aug_proba: 1
+  noise_channels: [0,0,0,0,0]
 
 loss_params:
-  view_maker_loss_weight: 1
+  view_maker_loss_weight: 0.01
   t: 0.07
   objective: AdversarialSimCLRLoss

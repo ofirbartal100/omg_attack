@@ -5,7 +5,7 @@ import torchvision
 from torch import nn
 
 from dabs.src.models.base_model import BaseModel
-from viewmaker.src.models import resnet_small
+from viewmaker.src.models import resnet_small, resnet
 from flowlp.flpert.models.resnet import resnet18
 
 
@@ -42,7 +42,7 @@ class ResNetDabs(BaseModel):
             encoder_model = model_class(num_classes=out_dim,
                                         in_channels=input_specs[0].in_channels)
         else:
-            model_class = getattr(torchvision.models, resnet_type)
+            model_class = getattr(resnet, resnet_type)
             encoder_model = model_class(
                 pretrained=False,
                 num_classes=out_dim,
@@ -66,5 +66,10 @@ class ResNetDabs(BaseModel):
         x = torch.cat(inputs, dim=0)
         return x
 
-    def encode(self, x: torch.Tensor, **kwargs):
-        return self.resnet(x)
+    def encode(self, x: torch.Tensor, prepool=False, prehead=False, **kwargs):
+        if prepool:
+            return self.resnet(x, layer=5)
+        if prehead:
+            return self.resnet(x, layer=6)
+        else:
+            return self.resnet(x)

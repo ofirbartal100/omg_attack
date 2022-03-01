@@ -5,7 +5,7 @@ import hydra
 from dabs.src.systems import expert
 
 
-@hydra.main(config_path='conf', config_name='pretrain_double_vm_no_disc_resnet')
+@hydra.main(config_path='conf', config_name='pretrain_double_vm_transformer')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -62,12 +62,6 @@ def run(config):
         system = viewmaker.ViewmakerP2PSystem(config)
     elif config.algorithm == 'expert':
         system = expert.ExpertSystem(config)
-    elif config.algorithm == 'expert_vm':
-        system = viewmaker.ExpertVMSystem(config)
-    elif config.algorithm == 'double_viewmaker_no_disc':
-        system = viewmaker.DoubleViewmakerSystem(config)
-    elif config.algorithm == 'multi_viewmaker_no_disc':
-        system = viewmaker.MultiViewmakerSystem(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 
