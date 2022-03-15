@@ -1,21 +1,19 @@
-algorithm: double_viewmaker_freq
+algorithm: double_original_viewmaker
 data_root: /disk2/ofirb/dabs/data
-# data_root: /home/dabs_vm/data
-gpus: [1]
-system: DoubleViewmakerFreqSystem
+gpus: [2]
+system: DoubleOriginalViewmakerSystem
 
-debug: False
-num_workers: null # #########
+debug: false
+num_workers: null 
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-#  base_dir: /home/dabs_vm/shahaf/dabs/exp/models
-  name: multi_vm_freq_orig_cifar_random_mix_freq_domain_only_orig # #########
+  name: double_vm_pmap_orig_system_rand_mask
 
 trainer:
   weights_summary: top
   seed: 0
-  val_check_interval: 1.0 # #########
+  val_check_interval: 1.0
   limit_val_batches: 1.0
   resume_from_checkpoint: null
   precision: 32  # set to 16 for O1 mixed precision, 32 for O0 full precision
@@ -30,52 +28,40 @@ optim:
   weight_decay: 0.0001
   momentum: 0.9  # only used for momentum-based optimizers
 
-defaults:
-  - dataset: cifar10_small # #########
-  - model: resnet_small # #########
-  # - model: transformer # #########
-#  - disc: tiny_p2p_disc
-
-disc:
-  lr: 0.0001
-  gan_warmup: 1
-  adv_loss_weight: 0.1 # #########
-  wgan: false # #########
-  r1_penalty_weight: 0.000001
-  conv_blocks: 4
-  dis_skip_steps: 0
-
-dataset:
-  batch_size: 64 # #########
-
 optim_params:
   learning_rate: 0.03
   momentum: 0.9
-  weight_decay: 1e-4
+  weight_decay: 0
   viewmaker_optim: adam
   viewmaker_learning_rate: 0.001
 
-model_params:
+model_params: 
   dimensions: 3
   noise_dim: 100
   num_res_blocks: 3
   additive: 1
-  additive_budget: 0.05 # #########
+  additive_budget: 0.05
   multiplicative: 0
   multiplicative_budget: 0.05
   tps: 0
   tps_budget: 0.05
   budget_aware: false
-  clamp_views: true # #########
-  generator_activation: relu # #########
+  clamp_views: false
+  generator_activation: relu
   spectral: False
   viewmaker_downsample: False
   use_budget: True
   aug_proba: 1
-  hf_weight: 1
-  lf_weight: 1
+
 
 loss_params:
   view_maker_loss_weight: 1
   t: 0.07
   objective: AdversarialSimCLRLoss
+
+defaults:
+  - dataset: pamap2_spectrogram
+  - model: resnet_small
+
+dataset:
+  batch_size: 128

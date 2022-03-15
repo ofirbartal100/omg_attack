@@ -88,10 +88,10 @@ class BaseSystem(pl.LightningModule):
             self.train_dataset,
             batch_size=self.config.dataset.batch_size,
             num_workers=self.config.dataset.num_workers,
-            # shuffle=not isinstance(self.train_dataset, IterableDataset),
+            shuffle=not isinstance(self.train_dataset, IterableDataset),
             drop_last=True,
             pin_memory=True,
-            sampler=SubsetRandomSampler(fraction_db(self.train_dataset, self.low_data)[0]),
+            # sampler=SubsetRandomSampler(fraction_db(self.train_dataset, self.low_data)[0]),
             # shuffle=not isinstance(self.train_dataset, IterableDataset),
         )
 
@@ -106,7 +106,7 @@ class BaseSystem(pl.LightningModule):
             shuffle=False,
             drop_last=False,
             pin_memory=True,
-            sampler=SubsetRandomSampler(fraction_db(self.val_dataset, self.low_data)[0]),
+            # sampler=SubsetRandomSampler(fraction_db(self.val_dataset, self.low_data)[0]),
         )
 
     def configure_optimizers(self):

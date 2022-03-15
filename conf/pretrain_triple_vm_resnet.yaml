@@ -1,16 +1,15 @@
-algorithm: double_viewmaker_freq
+algorithm: triple_vm
 data_root: /disk2/ofirb/dabs/data
 # data_root: /home/dabs_vm/data
-gpus: [1]
-system: DoubleViewmakerFreqSystem
+gpus: [1,2]
+system: TripleViewmakerDiscEMASystem
 
-debug: False
+debug: false
 num_workers: null # #########
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-#  base_dir: /home/dabs_vm/shahaf/dabs/exp/models
-  name: multi_vm_freq_orig_cifar_random_mix_freq_domain_only_orig # #########
+  name: triple_vm  # #########
 
 trainer:
   weights_summary: top
@@ -32,13 +31,12 @@ optim:
 
 defaults:
   - dataset: cifar10_small # #########
-  - model: resnet_small # #########
-  # - model: transformer # #########
+  - model: resnet_small # ########)#
 #  - disc: tiny_p2p_disc
 
 disc:
   lr: 0.0001
-  gan_warmup: 1
+  gan_warmup: 0
   adv_loss_weight: 0.1 # #########
   wgan: false # #########
   r1_penalty_weight: 0.000001
@@ -46,7 +44,7 @@ disc:
   dis_skip_steps: 0
 
 dataset:
-  batch_size: 64 # #########
+  batch_size: 128 # #########
 
 optim_params:
   learning_rate: 0.03
@@ -66,14 +64,12 @@ model_params:
   tps: 0
   tps_budget: 0.05
   budget_aware: false
-  clamp_views: true # #########
+  clamp_views: false # #########
   generator_activation: relu # #########
   spectral: False
   viewmaker_downsample: False
   use_budget: True
   aug_proba: 1
-  hf_weight: 1
-  lf_weight: 1
 
 loss_params:
   view_maker_loss_weight: 1

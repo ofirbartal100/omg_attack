@@ -1,19 +1,19 @@
 '''Main pretraining script.'''
-
+import warnings
+warnings.filterwarnings('ignore')
 import hydra
 
 
-@hydra.main(config_path='conf', config_name='pretrain_double_vm_schyzo_freq_resnet')
+@hydra.main(config_path='conf', config_name='pretrain_double_original_disc_pamap2')
 def run(config):
     # Deferred imports for faster tab completion
     import os
-
     import flatten_dict
     import pytorch_lightning as pl
 
     from dabs.src import online_evaluator
     from dabs.src.datasets.catalog import MULTILABEL_DATASETS, PRETRAINING_DATASETS, UNLABELED_DATASETS
-    from dabs.src.systems import emix, shed, viewmaker
+    from dabs.src.systems import emix, shed, viewmaker, viewmaker_original
 
     pl.seed_everything(config.trainer.seed)
 
@@ -30,7 +30,7 @@ def run(config):
         config.dataset.num_workers = 0
         logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)
     else:
-        logger = pl.loggers.WandbLogger(entity="shafir", project='domain-agnostic', name=config.exp.name, )
+        logger = pl.loggers.WandbLogger(entity="shafir", project='domain-agnostic', name=config.exp.name)
     logger.log_hyperparams(flat_config)
     callbacks = [pl.callbacks.ModelCheckpoint(dirpath=save_dir,
                                               every_n_train_steps=config.trainer.get("model_checkpoint_freq", 20000),
@@ -44,6 +44,12 @@ def run(config):
         system = shed.ShEDSystem(config)
     elif config.algorithm == 'viewmaker':
         system = viewmaker.ViewmakerSystem(config)
+    elif config.algorithm == 'original_viewmaker':
+        system = viewmaker_original.OriginalViewmakerSystem(config)
+    elif config.algorithm == 'double_original_viewmaker':
+        system = viewmaker_original.DoubleOriginalViewmakerSystem(config)
+    elif config.algorithm == 'double_original_viewmaker_disc':
+        system = viewmaker_original.DoubleOriginalViewmakerDiscSystem(config)
     elif config.algorithm == 'viewmaker_coop':
         system = viewmaker.ViewmakerCoopSystem(config)
     elif config.algorithm == 'viewmaker_disc':
@@ -58,6 +64,8 @@ def run(config):
         system = viewmaker.ViewmakerTransformerSystem(config)
     elif config.algorithm == 'double_viewmaker_schyzo_freq':
         system = viewmaker.DoubleViewmakerSchyzoFreqSystem(config)
+    elif config.algorithm == 'triple_vm':
+        system = viewmaker.TripleViewmakerDiscEMASystem(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 

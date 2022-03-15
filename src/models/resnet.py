@@ -30,7 +30,8 @@ class ResNetDabs(BaseModel):
                  dim=128,
                  out_dim=128,
                  projection_head=False):
-        super(ResNetDabs, self).__init__(input_specs)
+        # super(ResNetDabs, self).__init__(input_specs)
+        super(ResNetDabs, self).__init__(None)
         self.emb_dim = out_dim
         if resnet_type == 'resnet_small':
             # ResNet variant for smaller inputs (e.g. CIFAR-10).

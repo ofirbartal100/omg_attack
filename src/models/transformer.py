@@ -7,6 +7,11 @@ from einops import rearrange, repeat
 from torch import einsum, nn
 
 from dabs.src.models.base_model import BaseModel
+import matplotlib.pyplot as plt
+import PIL.Image as Image
+from torchvision.transforms.functional import resize
+from torchvision.utils import make_grid
+import cv2
 
 
 class PreNorm(nn.Module):
@@ -64,6 +69,17 @@ class Attention(nn.Module):
         out = rearrange(out, 'b h n d -> b n (h d)')
         return self.to_out(out)
 
+    def attend_maps(self, x):
+        h = self.heads
+
+        qkv = self.to_qkv(x).chunk(3, dim=-1)
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h=h), qkv)
+
+        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+
+        attn = self.attend(dots)
+        return attn
+
 
 class Transformer(nn.Module):
     '''Transformer encoder model.'''
@@ -86,6 +102,14 @@ class Transformer(nn.Module):
             x = attn(x) + x
             x = ff(x) + x
         return x
+
+    def calc_attn_maps(self,x):
+        for attn, ff in self.layers[:-1]:
+            x = attn(x) + x
+            x = ff(x) + x
+
+        attn = self.layers[-1][0]
+        return attn.fn.attend_maps(attn.norm(x))
 
 
 class DomainAgnosticTransformer(BaseModel):
@@ -148,3 +172,34 @@ class DomainAgnosticTransformer(BaseModel):
 
         x = self.to_latent(x)
         return self.mlp_head(x)
+
+    def visualize_attn_heads(self,inputs,original,token_id=0):
+        with torch.no_grad():
+            x = self.embed(inputs)
+
+            # encode
+            # Concatenate CLS token and add positional embeddings.
+            b, n, _ = x.shape
+            cls_tokens = repeat(self.cls_token, '() n d -> b n d', b=b)
+            x = torch.cat((cls_tokens, x), dim=1)
+            x += self.pos_embedding[:, :(n + 1)]
+
+            # Pass through Transformer.
+            id_in_batch = 0
+            attn = self.transformer.calc_attn_maps(x).cpu() #(batch , head , cls+num_tokens, cls+num_tokens)
+            attn_heads = attn[id_in_batch,:,token_id,1:]
+            attn_heads = rearrange(attn_heads, 'h (H W) -> h 1 H W', H=8)
+            attn_heads = resize(attn_heads, (32, 32), Image.LINEAR)
+
+            original = (original[id_in_batch]*255).byte().cpu().permute(1,2,0).numpy()
+            heatmaps = [cv2.applyColorMap(((attn_heads[i]/attn_heads.max())*255).byte().permute(1,2,0).numpy(), cv2.COLORMAP_INFERNO)  for i in range(len(attn_heads)) ]
+            overlays = [torch.from_numpy(cv2.addWeighted(heatmaps[i], 0.7, original, 0.3, 0)).unsqueeze(0)  for i in range(len(attn_heads)) ]
+            # overlays = [torch.from_numpy(heatmaps[i]).unsqueeze(0)  for i in range(len(attn_heads)) ]
+            overlays = torch.cat(overlays,dim=0).permute(0,3,1,2)
+            grid = make_grid(overlays, nrow=4)
+            grid = resize(grid, (560, 1120), Image.NEAREST)
+            plt.clf()
+            plt.imshow(grid.cpu().permute(1,2,0))
+            plt.savefig('/disk2/ofirb/dabs/debug_attn.jpg')
+        
+        # grid = resize(grid, (560, 1120), Image.NEAREST)

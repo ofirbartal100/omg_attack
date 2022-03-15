@@ -1,15 +1,17 @@
 # ckpt: /disk2/ofirb/dabs/exp/models/double_vm/epoch=256-step=99999-v1.ckpt
 # ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar_orig/epoch=256-step=99999.ckpt
-ckpt: /disk2/ofirb/dabs/exp/models/transformer_vm/epoch=924-step=359999.ckpt
+# ckpt: /disk2/ofirb/dabs/exp/models/transformer_vm/epoch=924-step=359999.ckpt
+ckpt: /home/shahafg/shared/Apple/dabs/exp/models/expert_cifar10 - transformer/epoch=974-step=379999.ckpt
+# ckpt: /home/shahafg/shared/Apple/dabs/exp/models/vm_trans_cifar10/epoch=820-step=319999.ckpt
 # ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar_orig_256/epoch=512-step=99999.ckpt
 data_root: /disk2/ofirb/dabs/data
-gpus: [2] # [5] # #######
+gpus: [0] # [5] # #######
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models/
   # name: double_vm_transfer_enc_coco
   # name: original_vm_transfer_enc_coco
-  name: transformer_vm_transfer_enc_aircraft
+  name: transformer_enc_expert_transfer_enc_aircrafts
   # name: original_256_vm_transfer_enc_cifar
   # name: test
 
@@ -34,6 +36,7 @@ optim:
 defaults:
   # - dataset: cifar10_small # #######
   - dataset: aircraft_small # #######
+  # - dataset: vgg_flowedr_small # #######
   # - dataset: mscoco_small # #######
   # - model: resnet_small  # used to set default model when no ckpt is passed in
   - model: transformer

@@ -261,7 +261,7 @@ class ViewmakerTransferSystem(BaseSystem):
 
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
-        unnormalized = self.viewmaker(imgs)
+        unnormalized, deltas = self.viewmaker(imgs)
         views = self.normalize(unnormalized)
         # views = self.normalize(unnormalized)
         if with_unnormalized:
@@ -275,6 +275,9 @@ class ViewmakerTransferSystem(BaseSystem):
         elif 'cifar' in self.config.dataset:
             mean = torch.tensor([0.491, 0.482, 0.446], device=imgs.device)
             std = torch.tensor([0.247, 0.243, 0.261], device=imgs.device)
+        elif 'coco' in self.config.dataset.name:
+            mean = torch.tensor([0.485, 0.456, 0.406], device=imgs.device)
+            std = torch.tensor([0.229, 0.224, 0.225], device=imgs.device)
         elif 'ffhq' in self.config.dataset:
             mean = torch.tensor([0.5202, 0.4252, 0.3803], device=imgs.device)
             std = torch.tensor([0.2496, 0.2238, 0.2210], device=imgs.device)

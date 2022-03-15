@@ -1,9 +1,10 @@
 
-# ckpt:
-ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar_orig/epoch=256-step=99999.ckpt
+ckpt:
+# ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar_orig/epoch=256-step=99999.ckpt
 # ckpt: /disk2/ofirb/dabs/exp/models/double_vm/epoch=256-step=99999-v1.ckpt
 # vm_ckpt: /disk2/ofirb/dabs/exp/models/double_vm/epoch=256-step=99999-v1.ckpt
-vm_ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar_orig/epoch=256-step=99999.ckpt
+# vm_ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar_orig/epoch=256-step=99999.ckpt
+vm_ckpt:  /home/shahafg/shared/Apple/dabs/exp/models/vm_trans_cifar10/epoch=820-step=319999.ckpt
 data_root: /disk2/ofirb/dabs/data
 gpus: [0]
 # system: DoubleViewmakerSystem
@@ -11,14 +12,14 @@ system: ViewmakerSystem
 debug: false
 
 viewmaker:
-  # config_path: /disk2/ofirb/dabs/exp/models/double_vm/vm_config.yaml
   config_path: /disk2/ofirb/dabs/exp/models/vm_cifar_orig/vm_config.yaml
+  # config_path: /home/shahafg/shared/Apple/dabs/exp/models/vm_trans_cifar10/vm_config.yaml
   p: 1.0
   reroll_prob: 0
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp
-  name: original_vm_transfer_aug+enc_flower
+  name: vm_transformer_transfer_aug_cifar
 
 trainer:
   weights_summary: top
@@ -37,10 +38,14 @@ optim:
   lr_scheduler: false
 
 defaults:
-  - dataset: vgg_flower_small
+  # - dataset: vgg_flower_small
+  # - dataset: mscoco_small
+  - dataset: cifar10_small
+  # - dataset: aircraft_small
   - model: resnet_small  # used to set default model when no ckpt is passed in
 
 
 dataset:
   batch_size: 128
-  low_data: 0.01
+  # low_data: 0.1
+  low_data: 1

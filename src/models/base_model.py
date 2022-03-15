@@ -33,6 +33,10 @@ class BaseModel(ABC, nn.Module):
 
         # Initialize list of embedding modules based on input specs and types.
         self.embed_modules = nn.ModuleList()
+        
+        if input_specs is None:
+            return
+
         for input_spec in input_specs:
             # Retrieve corresponding embedding module and initialize.
             if input_spec.input_type == 'tokens':
