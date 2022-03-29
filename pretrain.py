@@ -4,7 +4,7 @@ warnings.filterwarnings('ignore')
 import hydra
 
 
-@hydra.main(config_path='conf', config_name='pretrain_double_original_disc_pamap2')
+@hydra.main(config_path='conf', config_name='pretrain_vm_tama')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -46,8 +46,12 @@ def run(config):
         system = viewmaker.ViewmakerSystem(config)
     elif config.algorithm == 'original_viewmaker':
         system = viewmaker_original.OriginalViewmakerSystem(config)
+    elif config.algorithm == 'tama_viewmaker':
+        system = viewmaker_original.ViewmakerTAMA38System(config)
     elif config.algorithm == 'double_original_viewmaker':
         system = viewmaker_original.DoubleOriginalViewmakerSystem(config)
+    elif config.algorithm == 'double_original_viewmaker_unlearn':
+        system = viewmaker_original.DoubleViewmakerUnlearnSystem(config)
     elif config.algorithm == 'double_original_viewmaker_disc':
         system = viewmaker_original.DoubleOriginalViewmakerDiscSystem(config)
     elif config.algorithm == 'viewmaker_coop':

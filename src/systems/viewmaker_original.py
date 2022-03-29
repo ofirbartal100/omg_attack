@@ -12,7 +12,7 @@ from viewmaker.src.gans.tiny_pix2pix import TinyP2PDiscriminator
 from dabs.src.datasets import natural_images
 from dabs.src.systems.base_system import BaseSystem, get_model
 
-from original_vm.viewmaker.src.models.viewmaker import Viewmaker
+from original_vm.viewmaker.src.models.viewmaker import Viewmaker, ViewmakerTAMA38
 from viewmaker.src.objectives.memory_bank import MemoryBank
 from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
 from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
@@ -275,17 +275,53 @@ class OriginalViewmakerSystem(BaseSystem):
         return imgs
 
 
+class ViewmakerTAMA38System(OriginalViewmakerSystem):
+    '''System for Shuffled Embedding Detection.
+
+    Permutes 15% of embeddings within an example.
+    Objective is to predict which embeddings were replaced.
+    '''
+
+    def __init__(self, config):
+        super().__init__(config)
+
+    def setup(self, stage):
+        super().setup(self)
+        self.viewmaker = self.create_viewmaker(name='VM_Tama')
+
+
+    def create_viewmaker(self, **kwargs):
+        view_model = ViewmakerTAMA38(
+            num_channels=self.train_dataset.IN_CHANNELS,
+            distortion_budget=self.config.model_params.get("additive_budget", 0.05),
+            clamp=False
+        )
+        return view_model
+
+
 class DoubleOriginalViewmakerSystem(OriginalViewmakerSystem):
     def setup(self, stage):
         super().setup(self)
         self.viewmaker2 = self.create_viewmaker(name='VM2')
 
-    def view(self, imgs, with_unnormalized=False,  with_deltas=False):
+    def view(self, imgs, with_unnormalized=False,  with_deltas=False, sync_rand=True):
         if 'Expert' in self.config.system:
             raise RuntimeError('Cannot call self.view() with Expert system')
 
-        delta = self.viewmaker(imgs) - imgs
-        delta2 = self.viewmaker2(imgs) - imgs
+        if sync_rand:
+            random_numbers = torch.randint(123540,54684032480,(100,))
+            def seeds_generator(random_numbers):
+                for r in random_numbers:
+                    yield r
+            shared_seeds_generator = seeds_generator(random_numbers)
+            shared_seeds_generator2 = seeds_generator(random_numbers)
+
+            delta = self.viewmaker(imgs,shared_seeds_generator=shared_seeds_generator) - imgs
+            delta2 = self.viewmaker2(imgs,shared_seeds_generator=shared_seeds_generator2) - imgs
+
+        else:
+            delta = self.viewmaker(imgs) - imgs
+            delta2 = self.viewmaker2(imgs) - imgs
         # random pick vm
         # p = torch.rand(imgs.shape[0]).unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).to(imgs.device)
         # unnormalized = imgs+torch.where(p<0.5 , delta , delta2)
@@ -415,4 +451,123 @@ class DoubleOriginalViewmakerDiscSystem(DoubleOriginalViewmakerSystem):
         opt_list, [] = super().configure_optimizers()
         disc_optim = torch.optim.Adam(self.disc.parameters(), lr=self.config.disc.lr)
         opt_list.append(disc_optim)
+        return opt_list, []
+
+
+class DoubleViewmakerUnlearnSystem(DoubleOriginalViewmakerSystem):
+    
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        emb_dict = self.ssl_forward(batch)
+        encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = self.objective(emb_dict)
+        emb_dict['optimizer_idx'] = torch.tensor(optimizer_idx, device=self.device)
+
+        if optimizer_idx == 0:
+            metrics = {'encoder_loss': encoder_loss, "train_acc": encoder_acc, "positive_sim": positive_sim,"negative_sim": negative_sim}
+            loss = encoder_loss
+
+        elif optimizer_idx == 1:
+            metrics = {'view_maker_loss': view_maker_loss}
+            loss = view_maker_loss
+
+        elif optimizer_idx == 2:
+            # enforce difference between deltas , by penalty on cosine similarity between positives -> want them to be farther
+            mul = utils.l2_normalize(emb_dict['view1_embs']) * utils.l2_normalize(emb_dict['view2_embs'])
+            unlearn_loss = mul.sum(dim=1).mean()
+            metrics = {'unlearn_loss': unlearn_loss}
+            loss = unlearn_loss
+
+        else:
+            loss = None
+            metrics = None
+
+        return [loss, emb_dict, metrics]
+
+    def configure_optimizers(self):
+        opt_list, [] = super().configure_optimizers()
+        unlearn_optim = torch.optim.Adam(self.viewmaker2.parameters(), lr=self.config.optim_params.get("viewmaker_learning_rate", 0.001))
+        opt_list.append(unlearn_optim)
+        return opt_list, []
+
+
+class DoubleViewmakerUnlearnDiscSystem(DoubleOriginalViewmakerDiscSystem):
+    def setup(self, stage):
+        super().setup(stage)
+        self.unlearn_loss = torch.nn.MSELoss()
+        
+
+    def make_views(self, batch):
+        indices, img, labels = batch
+        views1, unnormalized_view1, delta1_1, delta1_2 = self.view(img, True, True)
+        views2, unnormalized_view2, delta2_1, delta2_2 = self.view(img, True, True)
+        emb_dict = {
+            'indices': indices,
+            'originals': img.cpu(),
+            'views1': views1,
+            'unnormalized_view1': unnormalized_view1.cpu(),
+            'views2': views2,
+            'unnormalized_view2': unnormalized_view2.cpu(),
+            'labels': labels,
+            'delta1': torch.cat([delta1_1, delta1_2], dim=0),
+            'delta2': torch.cat([delta2_1, delta2_2], dim=0),
+        }
+        return emb_dict
+
+    def gan_forward(self, batch, step_output, optimizer_idx=2):
+        # indices, img, _ = batch
+        img = step_output['views1']
+        disc_views = step_output['views2']
+
+        img.requires_grad = True
+        step_output['disc_r1_penalty'] = torch.tensor([0.0], device=self.device)
+        if optimizer_idx == 2:
+            step_output["real_score"] = self.disc(img)
+            if self.disc.wgan:
+                try:
+                    step_output["disc_r1_penalty"] = self.disc.r1_penalty(step_output["real_score"], img)
+                # this fails in validation mode
+                except RuntimeError as e:
+                    pass
+        step_output["fake_score"] = self.disc(disc_views)
+        return step_output
+
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        step_output = {'optimizer_idx': torch.tensor(optimizer_idx, device=self.device)}
+        step_output.update(self.ssl_forward(batch))
+
+        if optimizer_idx in [0, 1]:
+            encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = self.objective(step_output)
+
+        if optimizer_idx in [1, 2]:
+            step_output.update(self.gan_forward(batch, step_output, optimizer_idx))
+            disc_loss, disc_acc, gen_loss, gen_acc, r1_reg = self.gan_objective(step_output)
+
+        if optimizer_idx == 0:
+            loss = encoder_loss
+            metrics = {'encoder_loss': encoder_loss, "train_acc": encoder_acc, "positive_sim": positive_sim, "negative_sim": negative_sim}
+
+        elif optimizer_idx == 1:
+            loss = view_maker_loss + self.config.disc.adv_loss_weight * gen_loss
+            metrics = {'view_maker_loss': view_maker_loss, 'generator_loss': gen_loss, 'view_maker_total_loss': loss}
+
+        elif optimizer_idx == 2:
+            loss = disc_loss + self.config.disc.r1_penalty_weight * r1_reg  # ==0
+            metrics = {'disc_acc': disc_acc, 'disc_loss': disc_loss, 'disc_r1_penalty': r1_reg}
+
+        return [loss, step_output, metrics]
+
+    def gan_objective(self, emb_dict):
+        real_s = emb_dict.get('real_score')
+        fake_s = emb_dict['fake_score']
+        loss_n_acc = self.disc.calc_loss_and_acc(real_s, fake_s, r1_penalty=emb_dict['disc_r1_penalty'])
+        disc_loss = loss_n_acc.get("d_loss")
+        disc_acc = loss_n_acc.get("d_acc")
+        r1_reg = emb_dict.get('disc_r1_penalty')
+        gen_loss = loss_n_acc.get("g_loss")
+        gen_acc = loss_n_acc.get("g_acc")
+        return disc_loss, disc_acc, gen_loss, gen_acc, r1_reg
+
+    def configure_optimizers(self):
+        opt_list, [] = super().configure_optimizers()
+        unlearn_optim = torch.optim.Adam(self.viewmaker2.parameters(), lr=self.config.optim_params.get("viewmaker_learning_rate", 0.001))
+        opt_list.append(unlearn_optim)
         return opt_list, []
