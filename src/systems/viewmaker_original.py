@@ -12,11 +12,12 @@ from viewmaker.src.gans.tiny_pix2pix import TinyP2PDiscriminator
 from dabs.src.datasets import natural_images
 from dabs.src.systems.base_system import BaseSystem, get_model
 
-from original_vm.viewmaker.src.models.viewmaker import Viewmaker, ViewmakerTAMA38
+from original_vm.viewmaker.src.models.viewmaker import Viewmaker
 from viewmaker.src.objectives.memory_bank import MemoryBank
 from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
 from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
 from viewmaker.src.utils import utils
+from dabs.src.models import ViewmakerTAMA38
 
 
 class OriginalViewmakerSystem(BaseSystem):
