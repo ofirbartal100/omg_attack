@@ -41,8 +41,8 @@ class ViewmakerTAMA38(Viewmaker):
         # Upsampling Layers
         self.deconv2_2 = ConvLayer(64+64, 64, kernel_size=3, stride=1)
         self.deconv3_2 = ConvLayer(32+32, 32, kernel_size=3, stride=1)
-        self.in4_2 = torch.nn.InstanceNorm2d(64+64, affine=True)
-        self.in5_2 = torch.nn.InstanceNorm2d(32+32, affine=True)
+        self.in4_2 = torch.nn.InstanceNorm2d(64, affine=True)
+        self.in5_2 = torch.nn.InstanceNorm2d(32, affine=True)
 
 
     def basic_net(self, y, num_res_blocks=5, bound_multiplier=1,shared_seeds_generator=None):

@@ -17,7 +17,7 @@ from viewmaker.src.objectives.memory_bank import MemoryBank
 from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
 from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
 from viewmaker.src.utils import utils
-from dabs.src.models import ViewmakerTAMA38
+from dabs.src.models.viewmaker_tama import ViewmakerTAMA38
 
 
 class OriginalViewmakerSystem(BaseSystem):
