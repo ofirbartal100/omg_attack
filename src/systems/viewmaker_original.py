@@ -17,7 +17,7 @@ from viewmaker.src.objectives.memory_bank import MemoryBank
 from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
 from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
 from viewmaker.src.utils import utils
-from dabs.src.models.viewmaker_tama import ViewmakerTAMA38
+from dabs.src.models.viewmaker_tama import ViewmakerTAMA38 , ViewmakerTAMA38_2
 
 
 class OriginalViewmakerSystem(BaseSystem):
@@ -292,7 +292,12 @@ class ViewmakerTAMA38System(OriginalViewmakerSystem):
 
 
     def create_viewmaker(self, **kwargs):
-        view_model = ViewmakerTAMA38(
+        # view_model = ViewmakerTAMA38(
+        #     num_channels=self.train_dataset.IN_CHANNELS,
+        #     distortion_budget=self.config.model_params.get("additive_budget", 0.05),
+        #     clamp=False
+        # )
+        view_model = ViewmakerTAMA38_2(
             num_channels=self.train_dataset.IN_CHANNELS,
             distortion_budget=self.config.model_params.get("additive_budget", 0.05),
             clamp=False

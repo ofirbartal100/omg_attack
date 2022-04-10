@@ -1,14 +1,14 @@
-algorithm: double_original_viewmaker
+algorithm: double_original_viewmaker_unlearn
 data_root: /disk2/ofirb/dabs/data
-gpus: [0]
-system: DoubleOriginalViewmakerSystem
+gpus: [1]
+system: DoubleViewmakerUnlearnSystem
 
 debug: false
 num_workers: null 
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: double_vm_pmap_orig_system_added_same_rand
+  name: double_vm_pmap_orig_system_unlearn
 
 trainer:
   weights_summary: top

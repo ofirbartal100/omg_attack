@@ -3,7 +3,7 @@ import warnings
 warnings.filterwarnings('ignore')
 import hydra
 
-
+# pretrain_original
 @hydra.main(config_path='conf', config_name='pretrain_vm_tama')
 def run(config):
     # Deferred imports for faster tab completion
@@ -30,7 +30,7 @@ def run(config):
         config.dataset.num_workers = 0
         logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)
     else:
-        logger = pl.loggers.WandbLogger(entity="shafir", project='domain-agnostic', name=config.exp.name)
+        logger = pl.loggers.WandbLogger(entity="shafir", project='vm_tama', name=config.exp.name)
     logger.log_hyperparams(flat_config)
     callbacks = [pl.callbacks.ModelCheckpoint(dirpath=save_dir,
                                               every_n_train_steps=config.trainer.get("model_checkpoint_freq", 20000),
@@ -101,6 +101,7 @@ def run(config):
         accelerator=config.trainer.distributed_backend or None,
     )
 
+    ssl_online_evaluator.on_pretrain_routine_start(trainer,system)
     trainer.fit(system)
 
 

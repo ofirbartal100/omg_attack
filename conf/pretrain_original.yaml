@@ -1,14 +1,14 @@
-algorithm: double_original_viewmaker
+algorithm: original_viewmaker
 data_root: /disk2/ofirb/dabs/data
 gpus: [0]
-system: DoubleOriginalViewmakerSystem
+system: OriginalViewmakerSystem
 
 debug: false
 num_workers: null 
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: double_vm_pmap_orig_system_added_same_rand
+  name: vm_original_50%data
 
 trainer:
   weights_summary: top
@@ -40,7 +40,7 @@ model_params:
   noise_dim: 100
   num_res_blocks: 3
   additive: 1
-  additive_budget: 0.05
+  additive_budget: 0.09
   multiplicative: 0
   multiplicative_budget: 0.05
   tps: 0
@@ -60,8 +60,9 @@ loss_params:
   objective: AdversarialSimCLRLoss
 
 defaults:
-  - dataset: pamap2_spectrogram
+  - dataset: cifar10_small
   - model: resnet_small
 
 dataset:
-  batch_size: 128
+  batch_size: 100
+  low_data: 0.5

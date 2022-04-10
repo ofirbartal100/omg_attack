@@ -8,7 +8,7 @@ num_workers: null
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: vm_pmap_orig_system
+  name: vm_pmap_orig_system_0.09
 
 trainer:
   weights_summary: top
@@ -40,7 +40,7 @@ model_params:
   noise_dim: 100
   num_res_blocks: 3
   additive: 1
-  additive_budget: 0.05
+  additive_budget: 0.09
   multiplicative: 0
   multiplicative_budget: 0.05
   tps: 0

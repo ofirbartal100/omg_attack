@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 import torch
 from einops import rearrange, repeat
 from torch import einsum, nn
+from dabs.src.models.utils import zero_module, normalization , conv_nd
 
 from dabs.src.models.base_model import BaseModel
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ import PIL.Image as Image
 from torchvision.transforms.functional import resize
 from torchvision.utils import make_grid
 import cv2
-
+import numpy as np
 
 class PreNorm(nn.Module):
     '''Applies pre-layer layer normalization.'''
@@ -203,3 +204,117 @@ class DomainAgnosticTransformer(BaseModel):
             plt.savefig('/disk2/ofirb/dabs/debug_attn.jpg')
         
         # grid = resize(grid, (560, 1120), Image.NEAREST)
+
+
+
+
+
+
+class AttentionBlock(nn.Module):
+    """
+    An attention block that allows spatial positions to attend to each other.
+    Originally ported from here, but adapted to the N-d case.
+    https://github.com/hojonathanho/diffusion/blob/1e0dceb3b3495bbe19116a5e1b3596cd0706c543/diffusion_tf/models/unet.py#L66.
+    """
+
+    def __init__(self, channels, num_heads=1, use_checkpoint=False):
+        super().__init__()
+        self.channels = channels
+        self.num_heads = num_heads
+        self.use_checkpoint = use_checkpoint
+
+        self.norm = normalization(channels)
+        self.qkv = conv_nd(1, channels, channels * 3, 1)
+        self.attention = QKVAttention()
+        self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
+
+
+        
+
+    def forward(self, x,pos = False):
+        b, c, *spatial = x.shape
+        x = x.reshape(b, c, -1)
+        qkv = self.qkv(self.norm(x))
+        qkv = qkv.reshape(b * self.num_heads, -1, qkv.shape[2])
+        if pos:
+            h = self.attention(qkv, pos)
+        else:
+            h = self.attention(qkv)
+        h = h.reshape(b, -1, h.shape[-1])
+        h = self.proj_out(h)
+        return (x + h).reshape(b, c, *spatial)
+
+
+class QKVAttention(nn.Module):
+    """
+    A module which performs QKV attention.
+    """
+
+
+    def forward(self, qkv, pos=None):
+        """
+        Apply QKV attention.
+        :param qkv: an [N x (C * 3) x T] tensor of Qs, Ks, and Vs.
+        :return: an [N x C x T] tensor after attention.
+        """
+        ch = qkv.shape[1] // 3
+        q, k, v = torch.split(qkv, ch, dim=1)
+        scale = 1 / np.sqrt(np.sqrt(ch))
+        weight = torch.einsum(
+            "bct,bcs->bts", q * scale, k * scale
+        )  # More stable with f16 than dividing afterwards
+
+        # add positional encoding like in BoTNet
+        if pos:
+            h_rel_logits, w_rel_logits = self.relative_logits(q)
+            weight += h_rel_logits
+            weight += w_rel_logits
+
+        weight = torch.softmax(weight.float(), dim=-1).type(weight.dtype)
+        return torch.einsum("bts,bcs->bct", weight, v)
+
+    def relative_logits(self, q):
+        B, Nh, dk, H, W = q.size()
+        q = torch.transpose(q, 2, 4).transpose(2, 3)
+
+        rel_logits_w = self.relative_logits_1d(q, self.key_rel_w, H, W, Nh, "w")
+        rel_logits_h = self.relative_logits_1d(torch.transpose(q, 2, 3), self.key_rel_h, W, H, Nh, "h")
+
+        return rel_logits_h, rel_logits_w
+
+    def relative_logits_1d(self, q, rel_k, H, W, Nh, case):
+        rel_logits = torch.einsum('bhxyd,md->bhxym', q, rel_k)
+        rel_logits = torch.reshape(rel_logits, (-1, Nh * H, W, 2 * W - 1))
+        rel_logits = self.rel_to_abs(rel_logits)
+
+        rel_logits = torch.reshape(rel_logits, (-1, Nh, H, W, W))
+        rel_logits = torch.unsqueeze(rel_logits, dim=3)
+        rel_logits = rel_logits.repeat((1, 1, 1, H, 1, 1))
+
+        if case == "w":
+            rel_logits = torch.transpose(rel_logits, 3, 4)
+        elif case == "h":
+            rel_logits = torch.transpose(rel_logits, 2, 4).transpose(4, 5).transpose(3, 5)
+        rel_logits = torch.reshape(rel_logits, (-1, Nh, H * W, H * W))
+        return rel_logits
+
+    @staticmethod
+    def count_flops(model, _x, y):
+        """
+        A counter for the `thop` package to count the operations in an
+        attention operation.
+        Meant to be used like:
+            macs, params = thop.profile(
+                model,
+                inputs=(inputs, timestamps),
+                custom_ops={QKVAttention: QKVAttention.count_flops},
+            )
+        """
+        b, c, *spatial = y[0].shape
+        num_spatial = int(torch.prod(spatial))
+        # We perform two matmuls with the same number of ops.
+        # The first computes the weight matrix, the second computes
+        # the combination of the value vectors.
+        matmul_ops = 2 * b * (num_spatial ** 2) * c
+        model.total_ops += torch.DoubleTensor([matmul_ops])
+

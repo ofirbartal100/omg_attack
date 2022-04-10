@@ -88,6 +88,9 @@ class SSLOnlineEvaluator(Callback):  # pragma: no cover
             self.auroc = AUROC(num_classes=num_classes)
 
     def on_pretrain_routine_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        if "non_linear_evaluator" in pl_module.__dict__['_modules']:
+            return 
+
         pl_module.non_linear_evaluator = SSLEvaluator(
             n_input=self.z_dim,
             n_classes=self.num_classes,
