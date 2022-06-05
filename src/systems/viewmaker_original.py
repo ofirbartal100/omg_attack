@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from collections import OrderedDict
 
 import PIL.Image as Image
@@ -7,6 +8,7 @@ from pytorch_lightning.loggers import WandbLogger
 from torchvision.utils import make_grid
 import wandb
 import random
+import matplotlib.pyplot as plt
 from viewmaker.src.gans.tiny_pix2pix import TinyP2PDiscriminator
 
 from dabs.src.datasets import natural_images
@@ -17,8 +19,12 @@ from viewmaker.src.objectives.memory_bank import MemoryBank
 from viewmaker.src.systems.image_systems.utils import heatmap_of_view_effect
 from viewmaker.src.objectives.adversarial import AdversarialSimCLRLoss
 from viewmaker.src.utils import utils
-from dabs.src.models.viewmaker_tama import ViewmakerTAMA38 , ViewmakerTAMA38_2
-
+from dabs.src.models.viewmaker_tama import ViewmakerTAMA38 , ViewmakerTAMA38_2,  ViewmakerTAMA38_3
+from fastcam import maps
+from fastcam import misc
+from fastcam import mask
+from fastcam import norm
+import umap
 
 class OriginalViewmakerSystem(BaseSystem):
     '''System for Shuffled Embedding Detection.
@@ -29,7 +35,7 @@ class OriginalViewmakerSystem(BaseSystem):
 
     def __init__(self, config):
         self.disp_amnt = 10
-        self.logging_steps = 100
+        self.logging_steps = 10
         super().__init__(config)
 
     def setup(self, stage):
@@ -37,7 +43,17 @@ class OriginalViewmakerSystem(BaseSystem):
         self.viewmaker = self.create_viewmaker(name='VM')
         self.memory_bank = MemoryBank(len(self.train_dataset), 128)
         self.memory_bank_labels = MemoryBank(len(self.train_dataset), 1, dtype=int)
+    
+    ########################### FASTCAM #############################    
+    #     self.getSalmap  = maps.SaliencyModel(self.model.resnet, ['layer1','layer2','layer3','layer4'], output_size=[32,32], weights=None, norm_method=norm.GaussNorm2D)
 
+    # def extract_saliency(self,imgs):
+    #     x = self.normalize(imgs)
+    #     cam_map,_,_ = self.getSalmap(x)
+    #     return cam_map.unsqueeze(1)
+    
+    ########################### FASTCAM #############################
+    
     def forward(self, x, prehead=False):
         x[0] = self.normalize(x[0])
         return self.model.forward(x, prehead=prehead)
@@ -200,17 +216,19 @@ class OriginalViewmakerSystem(BaseSystem):
                 return
 
             if self.global_step % self.logging_steps == 0:
-                img = emb_dict['originals']
+                img = emb_dict['originals'][:self.disp_amnt]
+                unnormalized_view1 = emb_dict['unnormalized_view1'][:self.disp_amnt]
+                unnormalized_view2 = emb_dict['unnormalized_view2'][:self.disp_amnt]
 
-                unnormalized_view1 = emb_dict['unnormalized_view1']
-                unnormalized_view2 = emb_dict['unnormalized_view2']
-
-                diff_heatmap = heatmap_of_view_effect(img[:self.disp_amnt], unnormalized_view1[:self.disp_amnt])
-                diff_heatmap2 = heatmap_of_view_effect(img[:self.disp_amnt], unnormalized_view2[:self.disp_amnt])
+                diff_heatmap = heatmap_of_view_effect(img, unnormalized_view1)
+                diff_heatmap2 = heatmap_of_view_effect(img, unnormalized_view2)
                 cat = torch.cat(
-                    [img[:self.disp_amnt],
-                     unnormalized_view1[:self.disp_amnt],
-                     unnormalized_view2[:self.disp_amnt],
+                    [img,
+                     unnormalized_view1,
+                     unnormalized_view2,
+                    #  self.extract_saliency(img.cuda()).cpu().expand(-1,3,-1,-1),
+                    #  self.extract_saliency(unnormalized_view1.cuda()).cpu().expand(-1,3,-1,-1),
+                    #  self.extract_saliency(unnormalized_view2.cuda()).cpu().expand(-1,3,-1,-1),
                      diff_heatmap,
                      diff_heatmap2,
                      (diff_heatmap - diff_heatmap2).abs()])
@@ -219,7 +237,9 @@ class OriginalViewmakerSystem(BaseSystem):
                     cat = cat.mean(1).unsqueeze(1)
 
                 grid = make_grid(cat, nrow=self.disp_amnt)
-                grid = resize(torch.clamp(grid, 0, 1.0), (560, 1120), Image.NEAREST)
+                grid = resize(torch.clamp(grid, 0, 1.0), (6*150, 10*150), Image.NEAREST)
+
+
                 if isinstance(self.logger, WandbLogger):
                     wandb.log({
                         "original_vs_views": wandb.Image(grid, caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
@@ -275,6 +295,16 @@ class OriginalViewmakerSystem(BaseSystem):
         imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
         return imgs
 
+    # def training_epoch_end(self,training_step_outputs):
+    #     # do something with all training_step outputs
+    #     umap_projection  = umap.UMAP().fit_transform(self.memory_bank._bank.cpu().numpy())
+    #     plt.clf()
+    #     plt.scatter(umap_projection[:, 0], umap_projection[:, 1], s= 5, c=self.memory_bank_labels._bank.cpu().numpy(), cmap='Spectral')
+    #     wandb.log({
+    #             "umap_train": wandb.Image(plt),
+    #         })
+    #     plt.clf()
+        
 
 class ViewmakerTAMA38System(OriginalViewmakerSystem):
     '''System for Shuffled Embedding Detection.
@@ -285,24 +315,154 @@ class ViewmakerTAMA38System(OriginalViewmakerSystem):
 
     def __init__(self, config):
         super().__init__(config)
+        self.getSalmap  = maps.SaliencyModel(self.model.resnet, ['layer1','layer2','layer3','layer4'], output_size=[32,32], weights=None, norm_method=norm.GaussNorm2D)
+        self.reconstruction = nn.L1Loss()
+
 
     def setup(self, stage):
         super().setup(self)
         self.viewmaker = self.create_viewmaker(name='VM_Tama')
 
+    def forward(self, x, prehead=False):
+        x[0] = self.normalize(x[0])
+        return self.model.forward(x, prehead=prehead)
+
+    def make_views(self, batch):
+        indices, img, labels = batch
+        with torch.no_grad():
+            saliency = self.extract_saliency(img)
+        views1, unnormalized_view1 , saliency_decode = self.view(img, saliency, True)
+        views2, unnormalized_view2 , saliency_decode2= self.view(img, saliency, True)
+
+        # with torch.no_grad():
+        #     saliency_view1 = self.extract_saliency(unnormalized_view1).cpu()
+        #     saliency_view2 = self.extract_saliency(unnormalized_view2).cpu()
+
+        emb_dict = {
+            'indices': indices,
+            'originals': img.cpu(),
+            'views1': views1,
+            'unnormalized_view1': unnormalized_view1.cpu(),
+            'views2': views2,
+            'unnormalized_view2': unnormalized_view2.cpu(),
+            'labels': labels,
+            'saliency':saliency,
+            'saliency_decode':saliency_decode,
+            'saliency_decode2':saliency_decode2,
+            # 'saliency_view1':saliency_view1,
+            # 'saliency_view2':saliency_view2,
+        }
+        return emb_dict
+
+    def objective(self, emb_dict):
+        encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = super().objective(emb_dict)
+        reco1 = self.reconstruction(emb_dict['saliency_decode'],emb_dict['saliency'])
+        reco2 = self.reconstruction(emb_dict['saliency_decode2'],emb_dict['saliency'])
+        view_maker_loss += (reco1+reco2)
+        return encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim
+
+    # def training_step(self, batch, batch_idx, optimizer_idx):
+    #     emb_dict = self.ssl_forward(batch)
+    #     encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = self.objective(emb_dict)
+    #     emb_dict['optimizer_idx'] = torch.tensor(optimizer_idx, device=self.device)
+
+    #     if optimizer_idx == 0:
+    #         metrics = {'encoder_loss': encoder_loss, "train_acc": encoder_acc, "positive_sim": positive_sim,
+    #                    "negative_sim": negative_sim}
+    #         loss = encoder_loss
+    #     elif optimizer_idx == 1:
+    #         metrics = {'view_maker_loss': view_maker_loss}
+    #         loss = view_maker_loss
+    #     else:
+    #         loss = None
+    #         metrics = None
+
+    #     return [loss, emb_dict, metrics]
+
+
+    def extract_saliency(self,imgs,prehead=False):
+        x = self.normalize(imgs)
+        cam_map,_,_ = self.getSalmap(x)
+        return cam_map.unsqueeze(1)
+
+    def view(self, imgs,saliency, with_unnormalized=False):
+        if 'Expert' in self.config.system:
+            raise RuntimeError('Cannot call self.view() with Expert system')
+
+        imgs_and_saliency = torch.cat([imgs,saliency],dim=1)
+        unnormalized ,saliency_decode = self.viewmaker(imgs_and_saliency)
+        views = self.normalize(unnormalized)
+        if with_unnormalized:
+            return views, unnormalized , saliency_decode
+        return views
 
     def create_viewmaker(self, **kwargs):
         # view_model = ViewmakerTAMA38(
-        #     num_channels=self.train_dataset.IN_CHANNELS,
-        #     distortion_budget=self.config.model_params.get("additive_budget", 0.05),
-        #     clamp=False
-        # )
-        view_model = ViewmakerTAMA38_2(
+        # view_model = ViewmakerTAMA38_2(
+        view_model = ViewmakerTAMA38_3(
             num_channels=self.train_dataset.IN_CHANNELS,
             distortion_budget=self.config.model_params.get("additive_budget", 0.05),
             clamp=False
         )
         return view_model
+
+    def wandb_logging(self, emb_dict):
+        with torch.no_grad():
+
+            # check optimizer index to log images only once
+            # # Handle Tensor (dp) and int (ddp) cases
+            optimizer_idx = self.get_optimizer_index(emb_dict)
+            if optimizer_idx > 0:
+                return
+
+            if self.global_step % self.logging_steps == 0:
+                img = emb_dict['originals'][:self.disp_amnt]
+                saliency = emb_dict['saliency'].cpu().expand(-1,3,-1,-1)[:self.disp_amnt]
+                # saliency_view1 = emb_dict['saliency_view1'].cpu().expand(-1,3,-1,-1)[:self.disp_amnt]
+                # saliency_view2 = emb_dict['saliency_view2'].cpu().expand(-1,3,-1,-1)[:self.disp_amnt]
+                reco1 = emb_dict['saliency_decode'].cpu().expand(-1,3,-1,-1)[:self.disp_amnt]
+                reco2 = emb_dict['saliency_decode2'].cpu().expand(-1,3,-1,-1)[:self.disp_amnt]
+
+                unnormalized_view1 = emb_dict['unnormalized_view1'][:self.disp_amnt]
+                unnormalized_view2 = emb_dict['unnormalized_view2'][:self.disp_amnt]
+
+                diff_heatmap = heatmap_of_view_effect(img, unnormalized_view1)
+                diff_heatmap2 = heatmap_of_view_effect(img, unnormalized_view2)
+                cat = torch.cat(
+                    [img,
+                     saliency,
+                     unnormalized_view1,
+                     unnormalized_view2,
+                     diff_heatmap,
+                     diff_heatmap2,
+                     (diff_heatmap - diff_heatmap2).abs()])
+
+                if cat.shape[1] > 3:
+                    cat = cat.mean(1).unsqueeze(1)
+
+                grid = make_grid(cat, nrow=self.disp_amnt)
+                grid = resize(torch.clamp(grid, 0, 1.0), (560, 1120), Image.NEAREST)
+
+                cat_reco = torch.cat(
+                    [img,
+                     saliency,
+                     reco1,
+                     reco2,
+                     (reco1 - reco2).abs(),
+                     (saliency - reco1).abs()
+                     ])
+                grid_reco = make_grid(cat_reco, nrow=self.disp_amnt)
+                grid_reco = resize(torch.clamp(grid_reco, 0, 1.0), (560, 1120), Image.NEAREST)
+
+                if isinstance(self.logger, WandbLogger):
+                    wandb.log({
+                        "original_vs_views": wandb.Image(grid, caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
+                        "saliency reco": wandb.Image(grid_reco, caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
+                        "mean distortion": (unnormalized_view1 - img).abs().mean(),
+                    })
+                else:
+                    gg = torch.cat([grid,grid_reco],dim=-1)
+                    self.logger.experiment.add_image('original_vs_views&saliency', gg, self.global_step)
 
 
 class DoubleOriginalViewmakerSystem(OriginalViewmakerSystem):

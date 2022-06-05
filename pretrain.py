@@ -4,7 +4,8 @@ warnings.filterwarnings('ignore')
 import hydra
 
 # pretrain_original
-@hydra.main(config_path='conf', config_name='pretrain_vm_tama')
+# pretrain_vm_tama
+@hydra.main(config_path='conf', config_name='pretrain_original_temperatures')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -30,7 +31,7 @@ def run(config):
         config.dataset.num_workers = 0
         logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)
     else:
-        logger = pl.loggers.WandbLogger(entity="shafir", project='vm_tama', name=config.exp.name)
+        logger = pl.loggers.WandbLogger(entity="shafir", project='domain-agnostic', name=config.exp.name)
     logger.log_hyperparams(flat_config)
     callbacks = [pl.callbacks.ModelCheckpoint(dirpath=save_dir,
                                               every_n_train_steps=config.trainer.get("model_checkpoint_freq", 20000),

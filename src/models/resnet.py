@@ -64,7 +64,9 @@ class ResNetDabs(BaseModel):
                 )
         self.resnet = encoder_model
 
-    def embed(self, inputs: Tuple[torch.Tensor]):
+    def embed(self, inputs: Tuple[torch.Tensor] or torch.Tensor):
+        if isinstance(inputs,torch.Tensor):
+            return inputs
         x = torch.cat(inputs, dim=0)
         return x
 

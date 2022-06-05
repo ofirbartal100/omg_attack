@@ -4,12 +4,12 @@ data_root: /disk2/ofirb/dabs/data
 gpus: [0]
 system: ViewmakerTAMA38
 
-debug: false
+debug: true
 num_workers: null # #########
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: vm_cifar_tama_dec_noise_50% # #########
+  name: vm_cifar_saliency_reco_50% # #########
 
 trainer:
   weights_summary: top
@@ -18,7 +18,7 @@ trainer:
   limit_val_batches: 1.0
   resume_from_checkpoint: null # "/disk2/ofirb/dabs/exp/models/vm_cifar_tama_unet/epoch=51-step=19999.ckpt"
   precision: 32  # set to 16 for O1 mixed precision, 32 for O0 full precision
-  max_steps: 100_000
+  max_steps: 40_001
   gradient_clip_val: 0
   distributed_backend: dp
   model_checkpoint_freq: 20000

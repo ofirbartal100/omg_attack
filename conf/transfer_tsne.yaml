@@ -1,5 +1,6 @@
 # ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar_orig/epoch=51-step=19999.ckpt
-ckpt: /home/shahafg/shared/Apple/dabs/exp/models/vm_trans_cifar10/epoch=820-step=319999.ckpt
+# ckpt: /home/shahafg/shared/Apple/dabs/exp/models/vm_trans_cifar10/epoch=820-step=319999.ckpt
+ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar10/epoch=256-step=99999.ckpt
 # ckpt: /disk2/ofirb/dabs/exp/models/vm_cifar10/epoch=256-step=99999.ckpt
 # ckpt: /home/shahafg/shared/Apple/dabs/exp/models/vm_disc_cifar10/epoch=256-step=99999.ckpt
 data_root: /disk2/ofirb/dabs/data
