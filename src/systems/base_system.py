@@ -6,7 +6,7 @@ import torch
 import torchvision
 from omegaconf import DictConfig, OmegaConf
 from torch import nn
-from torch.utils.data import DataLoader, Dataset, IterableDataset, SubsetRandomSampler,Sampler
+from torch.utils.data import DataLoader, Dataset, IterableDataset, SubsetRandomSampler,Sampler, Subset
 from dabs.src.datasets.utils import fraction_db
 
 from dabs.src.datasets.catalog import DATASET_DICT
@@ -14,6 +14,11 @@ from dabs.src.models import transformer, resnet
 from viewmaker.src.utils.utils import load_json, save_json
 from dotmap import DotMap
 import os
+
+class Subset_Index(Subset):
+    def __getitem__(self, idx):
+        index, img, label = self.dataset[self.indices[idx]]
+        return idx,  img, label
 
 
 def get_model(config: DictConfig, dataset_class: Dataset, **kwargs):
@@ -68,6 +73,14 @@ class BaseSystem(pl.LightningModule):
         '''Called right after downloading data and before fitting model, initializes datasets with splits.'''
         self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True)
         self.val_dataset = self.dataset(base_root=self.config.data_root, download=True, train=False)
+
+        self.train_loader_indices = fraction_db(self.train_dataset, self.low_data)[0]
+        self.val_loader_indices = fraction_db(self.val_dataset, self.low_data)[0]
+
+
+        self.train_dataset_ss = Subset_Index(self.train_dataset,self.train_loader_indices)
+        self.val_dataset_ss = Subset_Index(self.val_dataset,self.val_loader_indices)
+
         try:
             print(
                 '\033[94m' + f'{len(self.train_dataset)} train examples, {len(self.val_dataset)} val examples' + '\033[0m')
@@ -85,13 +98,13 @@ class BaseSystem(pl.LightningModule):
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_dataset,
+            self.train_dataset_ss,
             batch_size=self.config.dataset.batch_size,
             num_workers=self.config.dataset.num_workers,
-            # shuffle=not isinstance(self.train_dataset, IterableDataset),
+            shuffle=True,
             drop_last=True,
             pin_memory=True,
-            sampler=SubsetRandomSampler(fraction_db(self.train_dataset, self.low_data)[0]),
+            # sampler=SubsetRandomSampler(self.train_loader_indices),
             # shuffle=not isinstance(self.train_dataset, IterableDataset),
         )
 
@@ -100,13 +113,13 @@ class BaseSystem(pl.LightningModule):
             raise ValueError('Cannot get validation data for this dataset')
 
         return DataLoader(
-            self.val_dataset,
+            self.val_dataset_ss,
             batch_size=self.config.dataset.batch_size,
             num_workers=self.config.dataset.num_workers,
             shuffle=False,
             drop_last=False,
             pin_memory=True,
-            sampler=SubsetRandomSampler(fraction_db(self.val_dataset, self.low_data)[0]),
+            # sampler=SubsetRandomSampler(self.val_loader_indices),
         )
 
     def configure_optimizers(self):
