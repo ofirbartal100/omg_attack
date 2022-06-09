@@ -29,7 +29,7 @@ class OriginalViewmakerSystem(BaseSystem):
 
     def __init__(self, config):
         self.disp_amnt = 10
-        self.logging_steps = 10
+        self.logging_steps = 100
         super().__init__(config)
 
     def setup(self, stage):

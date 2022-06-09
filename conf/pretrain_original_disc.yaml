@@ -1,6 +1,6 @@
 algorithm: viewmaker_original_disc
 data_root: /disk2/ofirb/dabs/data
-gpus: [2]
+gpus: [5]
 system: OriginalViewmakerSystemDisc
 
 debug: false
@@ -8,7 +8,7 @@ num_workers: null
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: vm_original_disc
+  name: vm_original_disc_ffhq
 
 trainer:
   weights_summary: top
@@ -20,7 +20,7 @@ trainer:
   max_steps: 100_000
   gradient_clip_val: 0
   distributed_backend: dp
-  model_checkpoint_freq: 25000
+  model_checkpoint_freq: 25_000
 
 optim:
   name: sgd
@@ -68,7 +68,8 @@ loss_params:
   objective: AdversarialSimCLRLoss
 
 defaults:
-  - dataset: cifar10_small
+  # - dataset: cifar10_small
+  - dataset: ffhq32
   - model: resnet_small
 
 dataset:

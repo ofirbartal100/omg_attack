@@ -8,7 +8,7 @@ from dabs.src.datasets.specs import Input2dSpec
 from viewmaker.src.datasets.root_paths import DATA_ROOTS
 
 
-class FFHQ(data.Dataset):
+class LFW(data.Dataset):
     NUM_CLASSES = 1
     INPUT_SIZE = (128, 128)
     PATCH_SIZE = (16, 16)
@@ -22,7 +22,7 @@ class FFHQ(data.Dataset):
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
         self.train = train
-        base_root = DATA_ROOTS['ffhq']
+        base_root = DATA_ROOTS['lfw']
         self.transforms = transforms.Compose(
             [
                 transforms.Resize(self.INPUT_SIZE),
@@ -62,24 +62,24 @@ class FFHQ(data.Dataset):
 
     @staticmethod
     def num_classes():
-        return FFHQ.NUM_CLASSES
+        return LFW.NUM_CLASSES
 
     @staticmethod
     def normalize(imgs):
-        mean = torch.tensor(FFHQ.MEAN, device=imgs.device)
-        std = torch.tensor(FFHQ.STD, device=imgs.device)
+        mean = torch.tensor(LFW.MEAN, device=imgs.device)
+        std = torch.tensor(LFW.STD, device=imgs.device)
         imgs = (imgs - mean[None, :, None, None]) / std[None, :, None, None]
         return imgs
 
     @staticmethod
     def unnormalize(imgs):
-        mean = torch.tensor(FFHQ.MEAN, device=imgs.device)
-        std = torch.tensor(FFHQ.STD, device=imgs.device)
+        mean = torch.tensor(LFW.MEAN, device=imgs.device)
+        std = torch.tensor(LFW.STD, device=imgs.device)
         imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
         return imgs
 
 
-class FFHQ32(FFHQ):
+class LFW32(LFW):
 
     INPUT_SIZE = (32, 32)
     PATCH_SIZE = (4, 4)
@@ -89,10 +89,10 @@ class FFHQ32(FFHQ):
     def spec():
         '''Returns a dict containing dataset spec.'''
         return [
-            Input2dSpec(input_size=FFHQ32.INPUT_SIZE, patch_size=FFHQ32.PATCH_SIZE, in_channels=FFHQ32.IN_CHANNELS),
+            Input2dSpec(input_size=LFW32.INPUT_SIZE, patch_size=LFW32.PATCH_SIZE, in_channels=LFW32.IN_CHANNELS),
         ]
 
-class FFHQ64(FFHQ):
+class LFW64(LFW):
 
     INPUT_SIZE = (64, 64)
     PATCH_SIZE = (4, 4)
@@ -102,10 +102,10 @@ class FFHQ64(FFHQ):
     def spec():
         '''Returns a dict containing dataset spec.'''
         return [
-            Input2dSpec(input_size=FFHQ64.INPUT_SIZE, patch_size=FFHQ64.PATCH_SIZE, in_channels=FFHQ64.IN_CHANNELS),
+            Input2dSpec(input_size=LFW64.INPUT_SIZE, patch_size=LFW64.PATCH_SIZE, in_channels=LFW64.IN_CHANNELS),
         ]
 
-class FFHQ112(FFHQ):
+class LFW112(LFW):
 
     INPUT_SIZE = (112, 112)
     PATCH_SIZE = (8, 8)
@@ -115,5 +115,5 @@ class FFHQ112(FFHQ):
     def spec():
         '''Returns a dict containing dataset spec.'''
         return [
-            Input2dSpec(input_size=FFHQ112.INPUT_SIZE, patch_size=FFHQ112.PATCH_SIZE, in_channels=FFHQ112.IN_CHANNELS),
+            Input2dSpec(input_size=LFW112.INPUT_SIZE, patch_size=LFW112.PATCH_SIZE, in_channels=LFW112.IN_CHANNELS),
         ]

@@ -1,6 +1,6 @@
 from dabs.src.datasets.captioned_images import mscoco, vqa
 from dabs.src.datasets.medical_images import chexpert, xray8
-from dabs.src.datasets.natural_images import aircraft, cifar, cu_birds, dtd, imagenet, traffic_sign, vgg_flower, ffhq
+from dabs.src.datasets.natural_images import aircraft, cifar, cu_birds, dtd, imagenet, traffic_sign, vgg_flower, ffhq , lfw
 from dabs.src.datasets.sensor import pamap2
 from dabs.src.datasets.speech import audio_mnist, fluent_speech, google_speech, librispeech, voxceleb1
 from dabs.src.datasets.text import glue, mc4, pawsx, wikitext
@@ -22,6 +22,9 @@ DATASET_DICT = {
     'ffhq32': ffhq.FFHQ32,
     'ffhq64': ffhq.FFHQ64,
     'ffhq112': ffhq.FFHQ112,
+    'lfw32': lfw.LFW32,
+    'lfw64': lfw.LFW64,
+    'lfw112': lfw.LFW112,
     'cifar10': cifar.CIFAR10,
     'cifar10_small': cifar.CIFAR10Small,
     'cu_birds': cu_birds.CUBirds,
@@ -72,9 +75,9 @@ DATASET_DICT = {
 
 PRETRAINING_DATASETS = [
     'cifar10_small', 'imagenet', 'pamap2', 'pamap2_spectrogram', 'mscoco', 'wikitext103', 'chexpert', 'librispeech', 'vqa',
-    'mc4', 'ffhq112', 'ffhq64', 'ffhq32'
+    'mc4', 'ffhq112', 'ffhq64', 'ffhq32' , 'lfw32', 'lfw64', 'lfw112'
 ]
-UNLABELED_DATASETS = ['wikitext103', 'librispeech', 'mc4']
+UNLABELED_DATASETS = ['wikitext103', 'librispeech', 'mc4', 'ffhq112', 'ffhq64', 'ffhq32' , 'lfw32', 'lfw64', 'lfw112']
 MULTILABEL_DATASETS = ['chexpert', 'vqa']
 
 TRANSFER_DATASETS = [

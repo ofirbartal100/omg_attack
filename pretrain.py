@@ -4,7 +4,8 @@ warnings.filterwarnings('ignore')
 import hydra
 
 # pretrain_original
-@hydra.main(config_path='conf', config_name='pretrain_original_disc')
+# pretrain_original_disc
+@hydra.main(config_path='conf', config_name='pretrain_original')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -103,7 +104,9 @@ def run(config):
         accelerator=config.trainer.distributed_backend or None,
     )
 
-    ssl_online_evaluator.on_pretrain_routine_start(trainer,system)
+    if config.dataset.name not in UNLABELED_DATASETS:
+        ssl_online_evaluator.on_pretrain_routine_start(trainer,system)
+        
     trainer.fit(system)
 
 
