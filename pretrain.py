@@ -5,7 +5,7 @@ import hydra
 
 # pretrain_original
 # pretrain_original_disc
-@hydra.main(config_path='conf', config_name='pretrain_original')
+@hydra.main(config_path='conf', config_name='pretrain_original_jit_disc')
 def run(config):
     # Deferred imports for faster tab completion
     import os

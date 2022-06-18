@@ -16,8 +16,8 @@ class LFW(data.Dataset):
     FILTER_SIZE = 32
     MULTI_LABEL = False
 
-    MEAN = [0.5202, 0.4252, 0.3803]
-    STD = [0.2496, 0.2238, 0.2210]
+    MEAN = [0.4321, 0.3748, 0.3333]
+    STD = [0.2819, 0.2563, 0.2500]
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()

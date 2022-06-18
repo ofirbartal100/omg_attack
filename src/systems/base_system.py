@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, Dataset, IterableDataset, SubsetRandomS
 from dabs.src.datasets.utils import fraction_db
 
 from dabs.src.datasets.catalog import DATASET_DICT
-from dabs.src.models import transformer, resnet
+from dabs.src.models import transformer, resnet , jit_model
 from viewmaker.src.utils.utils import load_json, save_json
 from dotmap import DotMap
 import os
@@ -28,6 +28,8 @@ def get_model(config: DictConfig, dataset_class: Dataset, **kwargs):
         model_class = transformer.DomainAgnosticTransformer
     elif "resnet" in config.model.name:
         model_class = resnet.ResNetDabs
+    elif "jit" in config.model.name:
+        model_class = jit_model.JitModel
     else:
         raise ValueError(f'Encoder {config.model.name} doesn\'t exist.')
     # Retrieve the dataset-specific params.

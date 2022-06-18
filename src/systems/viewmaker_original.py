@@ -49,11 +49,11 @@ class OriginalViewmakerSystem(BaseSystem):
         views2, unnormalized_view2 = self.view(img, True)
         emb_dict = {
             'indices': indices,
-            'originals': img.cpu(),
+            'originals': img,#.cpu(),
             'views1': views1,
-            'unnormalized_view1': unnormalized_view1.cpu(),
+            'unnormalized_view1': unnormalized_view1,#.cpu(),
             'views2': views2,
-            'unnormalized_view2': unnormalized_view2.cpu(),
+            'unnormalized_view2': unnormalized_view2,#.cpu(),
             'labels': labels
         }
         return emb_dict
@@ -72,7 +72,7 @@ class OriginalViewmakerSystem(BaseSystem):
         if optimizer_idx == 0:
             metrics = {'encoder_loss': encoder_loss, "train_acc": encoder_acc, "positive_sim": positive_sim,
                        "negative_sim": negative_sim}
-            loss = encoder_loss
+            loss = encoder_loss*0
         elif optimizer_idx == 1:
             metrics = {'view_maker_loss': view_maker_loss}
             loss = view_maker_loss
@@ -150,19 +150,7 @@ class OriginalViewmakerSystem(BaseSystem):
         return num_correct, embs.size(0)
 
     def configure_optimizers(self):
-        enc_params = [p for p in self.model.parameters() if p.requires_grad]
-        if self.config.optim.name == 'adam':
-            encoder_optim = torch.optim.AdamW(enc_params, lr=self.config.optim.lr,
-                                              weight_decay=self.config.optim.weight_decay)
-        elif self.config.optim.name == 'sgd':
-            encoder_optim = torch.optim.SGD(
-                enc_params,
-                lr=self.config.optim.lr,
-                weight_decay=self.config.optim.weight_decay,
-                momentum=self.config.optim.momentum,
-            )
-        else:
-            raise ValueError(f'{self.config.optim.name} optimizer unrecognized.')
+        
 
         view_optim_name = self.config.optim_params.get("viewmaker_optim")
         view_parameters = self.viewmaker.parameters()
@@ -180,8 +168,24 @@ class OriginalViewmakerSystem(BaseSystem):
         else:
             raise ValueError(f'Optimizer {view_optim_name} not implemented')
 
-        opt_list = [encoder_optim, view_optim]
 
+        enc_params = [p for p in self.model.parameters() if p.requires_grad]
+        if len(enc_params) == 0:
+            encoder_optim = view_optim
+        elif self.config.optim.name == 'adam':
+            encoder_optim = torch.optim.AdamW(enc_params, lr=self.config.optim.lr,
+                                              weight_decay=self.config.optim.weight_decay)
+        elif self.config.optim.name == 'sgd':
+            encoder_optim = torch.optim.SGD(
+                enc_params,
+                lr=self.config.optim.lr,
+                weight_decay=self.config.optim.weight_decay,
+                momentum=self.config.optim.momentum,
+            )
+        else:
+            raise ValueError(f'{self.config.optim.name} optimizer unrecognized.')
+
+        opt_list = [encoder_optim, view_optim]
         return opt_list, []
 
     def get_optimizer_index(self, emb_dict):
