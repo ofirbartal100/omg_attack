@@ -119,7 +119,7 @@ class BaseSystem(pl.LightningModule):
             batch_size=self.config.dataset.batch_size,
             num_workers=self.config.dataset.num_workers,
             shuffle=False,
-            drop_last=False,
+            drop_last=True,
             pin_memory=True,
             # sampler=SubsetRandomSampler(self.val_loader_indices),
         )

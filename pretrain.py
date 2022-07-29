@@ -9,6 +9,7 @@ import hydra
 def run(config):
     # Deferred imports for faster tab completion
     import os
+    os.environ["CUDA_VISIBLE_DEVICES"] ="0,7"
     import flatten_dict
     import pytorch_lightning as pl
 
@@ -49,6 +50,10 @@ def run(config):
         system = viewmaker_original.OriginalViewmakerSystem(config)
     elif config.algorithm == 'viewmaker_original_disc':
         system = viewmaker_original.ViewmakerOriginalSystemDisc(config)
+    elif config.algorithm == 'viewmaker_ceva_disc':
+        system = viewmaker_original.CevaViewmakerSystem(config)
+    elif config.algorithm == 'conditional_viewmaker':
+        system = viewmaker_original.ConditionalViewmakerSystem(config)
     elif config.algorithm == 'tama_viewmaker':
         system = viewmaker_original.ViewmakerTAMA38System(config)
     elif config.algorithm == 'double_original_viewmaker':

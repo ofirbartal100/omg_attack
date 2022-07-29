@@ -1,19 +1,21 @@
 # algorithm: original_viewmaker
 data_root: /disk2/ofirb/dabs/data
-gpus: [3,4]
+gpus: [0,1]
 # system: OriginalViewmakerSystem
 
-algorithm: viewmaker_original_disc
-system: ViewmakerOriginalSystemDisc
+algorithm: viewmaker_ceva_disc
+system: CevaViewmakerSystem
 
 disc:
-  adv_loss_weight: 0.1
+  adv_loss_weight: 6
   conv_blocks: 4
   dis_skip_steps: 0
   gan_warmup: 1
   lr: 0.0001
   r1_penalty_weight: 0.00001
   wgan: false
+  adv_loss_weight_gen: 2
+  enc_loss_weight: 0.3
 
 
 debug: false
@@ -21,16 +23,16 @@ num_workers: null
 
 exp:
   base_dir: /disk2/ofirb/dabs/exp/models
-  name: vm_original_disc_jit_lfw_112_freeze_encoder
+  name: vm_ceva_only_stylegan_with_enc
 
 trainer:
   weights_summary: top
   seed: 0
   val_check_interval: 1.0
   limit_val_batches: 1.0
-  resume_from_checkpoint: null #/disk2/ofirb/dabs/exp/models/vm_original_disc_jit_lfw_112/epoch=537-step=99999.ckpt
+  resume_from_checkpoint: /disk2/ofirb/dabs/exp/models/vm_ceva_only_stylegan/epoch=100-step=49999.ckpt
   precision: 32  # set to 16 for O1 mixed precision, 32 for O0 full precision
-  max_steps: 100_001
+  max_steps: 250_001
   gradient_clip_val: 0
   distributed_backend: dp
   model_checkpoint_freq: 25_000
@@ -53,7 +55,7 @@ model_params:
   noise_dim: 100
   num_res_blocks: 3
   additive: 1
-  additive_budget: 0.05
+  additive_budget: 0.025
   multiplicative: 0
   multiplicative_budget: 0.05
   tps: 0
@@ -69,7 +71,7 @@ model_params:
 
 loss_params:
   view_maker_loss_weight: 1
-  t: 0.07
+  t: 0.1
   objective: AdversarialSimCLRLoss
 
 defaults:
@@ -80,5 +82,5 @@ defaults:
   - model: jit_model
 
 dataset:
-  batch_size: 64
+  batch_size: 16 #24
   low_data: 1

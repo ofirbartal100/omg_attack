@@ -3,7 +3,7 @@ import torch
 import torch.utils.data as data
 import torchvision
 from torchvision import datasets, transforms
-
+import os
 from dabs.src.datasets.specs import Input2dSpec
 from viewmaker.src.datasets.root_paths import DATA_ROOTS
 
@@ -29,7 +29,21 @@ class LFW(data.Dataset):
                 transforms.ToTensor(),
             ]
         )
-        self.dataset = datasets.ImageFolder(base_root, transform=self.transforms)
+
+        # seperate test images from training data
+        # self.test_subset = [13,14,15,16,70,78,102,126,167,283,308,334,359,377,386,381,388,397,424,411,448,486,502,569,550,598,590,622,626,646,667,670,690,651,655,792,796,788,763,768,822,823,907,956,998,999,1052,1016,1028,1146,1553,1552,1561,1521,1522,1603,1678,1752,1753,1756,1872,1830,1916,1919,1939,2483,2484,2653,2696,2603,2609,2815]
+        # def set_test_as_invalid(x):
+        #     head, tail = os.path.split(x)
+        #     name = tail.split('.')[0]
+        #     if int(name) in self.test_subset:
+        #         return False
+        #     else:
+        #         return True
+
+
+        self.dataset = datasets.ImageFolder(base_root, transform=self.transforms) #, is_valid_file=set_test_as_invalid)
+        
+
         self.train_len = len(self.dataset) // 10 * 9
         if self.train:
             self.dataset.targets = self.dataset.targets[:self.train_len]
