@@ -435,7 +435,7 @@ class CevaViewmakerSystem(OriginalViewmakerSystem):
 
 
         self.disc = StyleGan2Disc(size=256,channel_multiplier=2)
-        checkpoint = torch.load("/disk2/ofirb/stylegan2_pytorch/checkpoint/550000.pt")
+        checkpoint = torch.load("/workspace/stylegan2_pytorch/checkpoint/550000.pt")
         self.disc.load_state_dict(checkpoint["d"],strict=True)
         # for p in self.disc.parameters():
         #     p.requires_grad = False
@@ -542,8 +542,12 @@ class CevaViewmakerSystem(OriginalViewmakerSystem):
         return [loss, step_output, metrics]
 
     def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False):
-        # if optimizer_idx == 0: # dont optimize encoder
-            # optimizer_closure()
+        if optimizer_idx == 0: # dont optimize encoder
+
+            if self.trainer.global_step % self.config.enc_every == 0 and self.trainer.global_step > self.config.start_enc:
+                super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
+            else:
+                optimizer_closure()
             # if self.trainer.global_step < 10000: # start with only the discriminator, to help the budget
             #     optimizer_closure()
             # else:
@@ -554,9 +558,9 @@ class CevaViewmakerSystem(OriginalViewmakerSystem):
         #     else:
         #         optimizer_closure()
         #         # super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
-        # else:
-            # super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
-        super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
+        else:
+            super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
+        #super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
 
     def gan_forward(self, batch, step_output, optimizer_idx=1):
     # def gan_forward(self, batch, step_output):

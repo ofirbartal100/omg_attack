@@ -1,0 +1,12 @@
+program:  /workspace/dabs/pretrain.py
+method: grid
+parameters:
+  enc_every:
+    values: [2 , 3 , 4]
+  start_enc:
+    values: [0 , 30000 ,60000]
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

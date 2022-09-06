@@ -9,8 +9,10 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset, IterableDataset, SubsetRandomSampler,Sampler, Subset
 from dabs.src.datasets.utils import fraction_db
 
-from dabs.src.datasets.catalog import DATASET_DICT
+#from dabs.src.datasets.catalog import DATASET_DICT
+from dabs.src.datasets.natural_images import lfw
 from dabs.src.models import transformer, resnet , jit_model
+#from dabs.src.models import resnet, jit_model
 from viewmaker.src.utils.utils import load_json, save_json
 from dotmap import DotMap
 import os
@@ -50,7 +52,7 @@ class BaseSystem(pl.LightningModule):
         '''
         super().__init__()
         self.config = config
-        self.dataset = DATASET_DICT[config.dataset.name]
+        self.dataset = lfw.LFW112 #DATASET_DICT[config.dataset.name]
         self.model = get_model(config, self.dataset)
         self.low_data = config.dataset.get("low_data", 1.0)
 

@@ -5,16 +5,15 @@ import hydra
 
 # pretrain_original
 # pretrain_original_disc
-@hydra.main(config_path='conf', config_name='pretrain_original_jit_disc')
+@hydra.main(config_path='conf', config_name='ceva')
 def run(config):
     # Deferred imports for faster tab completion
     import os
-    os.environ["CUDA_VISIBLE_DEVICES"] ="0,7"
     import flatten_dict
     import pytorch_lightning as pl
 
     from dabs.src import online_evaluator
-    from dabs.src.datasets.catalog import MULTILABEL_DATASETS, PRETRAINING_DATASETS, UNLABELED_DATASETS
+    #from dabs.src.datasets.catalog import MULTILABEL_DATASETS, PRETRAINING_DATASETS, UNLABELED_DATASETS
     from dabs.src.systems import emix, shed, viewmaker, viewmaker_original
 
     pl.seed_everything(config.trainer.seed)
@@ -22,6 +21,8 @@ def run(config):
     # Saving checkpoints and logging with wandb.
     flat_config = flatten_dict.flatten(config, reducer='dot')
     save_dir = os.path.join(config.exp.base_dir, config.exp.name)
+
+
 
     # override dataset configs if needed
     if config.get("num_workers") is not None:
@@ -82,14 +83,14 @@ def run(config):
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 
     # Online evaluator for labeled datasets.
-    if config.dataset.name not in UNLABELED_DATASETS:
-        ssl_online_evaluator = online_evaluator.SSLOnlineEvaluator(
-            dataset=config.dataset.name,
-            z_dim=config.model.kwargs.dim,
-            num_classes=system.dataset.num_classes(),
-            multi_label=(config.dataset.name in MULTILABEL_DATASETS),
-        )
-        callbacks += [ssl_online_evaluator]
+    #if config.dataset.name not in UNLABELED_DATASETS:
+    #    ssl_online_evaluator = online_evaluator.SSLOnlineEvaluator(
+    #        dataset=config.dataset.name,
+    #        z_dim=config.model.kwargs.dim,
+    #        num_classes=system.dataset.num_classes(),
+    #        multi_label=(config.dataset.name in MULTILABEL_DATASETS),
+    #    )
+    #    callbacks += [ssl_online_evaluator]
 
     # PyTorch Lightning Trainer.
     trainer = pl.Trainer(
@@ -98,22 +99,23 @@ def run(config):
         gpus=config.gpus,  # GPU indices
         max_steps=config.trainer.max_steps,
         min_steps=config.trainer.max_steps,
-        resume_from_checkpoint=config.trainer.resume_from_checkpoint,
+        resume_from_checkpoint=config.trainer.resume_from_checkpoint if config.start_enc > 0 else None,
         val_check_interval=config.trainer.val_check_interval,
         limit_val_batches=config.trainer.limit_val_batches,
         callbacks=callbacks,
         profiler="simple",
-        weights_summary=config.trainer.weights_summary,
+        #weights_summary=config.trainer.weights_summary,
         gradient_clip_val=config.trainer.gradient_clip_val,
         precision=config.trainer.precision,
-        accelerator=config.trainer.distributed_backend or None,
+        strategy=config.trainer.distributed_backend or None,
     )
 
-    if config.dataset.name not in UNLABELED_DATASETS:
-        ssl_online_evaluator.on_pretrain_routine_start(trainer,system)
+    #if config.dataset.name not in UNLABELED_DATASETS:
+    #    ssl_online_evaluator.on_pretrain_routine_start(trainer,system)
         
     trainer.fit(system)
 
 
 if __name__ == '__main__':
     run()
+

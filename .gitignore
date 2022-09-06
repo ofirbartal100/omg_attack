@@ -6,6 +6,7 @@ reference/
 .vscode/
 *.png
 exp/
+wandb/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

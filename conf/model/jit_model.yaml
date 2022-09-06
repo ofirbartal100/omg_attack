@@ -1,3 +1,3 @@
 name: jit_model
 kwargs:
-  jit_model_path: '/disk2/ofirb/dabs/exp/models/vm_MobileFaceNet/mobilefacenet_scripted.pt'
+  jit_model_path: '/workspace/MobileFaceNet/checkpoints/mobilefacenet.pt'

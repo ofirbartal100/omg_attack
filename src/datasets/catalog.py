@@ -1,20 +1,20 @@
-from dabs.src.datasets.captioned_images import mscoco, vqa
-from dabs.src.datasets.medical_images import chexpert, xray8
+#from dabs.src.datasets.captioned_images import mscoco, vqa
+#from dabs.src.datasets.medical_images import chexpert, xray8
 from dabs.src.datasets.natural_images import aircraft, cifar, cu_birds, dtd, imagenet, traffic_sign, vgg_flower, ffhq , lfw
-from dabs.src.datasets.sensor import pamap2
-from dabs.src.datasets.speech import audio_mnist, fluent_speech, google_speech, librispeech, voxceleb1
-from dabs.src.datasets.text import glue, mc4, pawsx, wikitext
+#from dabs.src.datasets.sensor import pamap2
+#from dabs.src.datasets.speech import audio_mnist, fluent_speech, google_speech, librispeech, voxceleb1
+#from dabs.src.datasets.text import glue, mc4, pawsx, wikitext
 
 DATASET_DICT = {
     # Captioned images.
-    'mscoco': mscoco.MSCOCO,
-    'mscoco_small': mscoco.MSCOCOSMALL,
-    'mismatched_caption': mscoco.MismatchedCaption,
-    'vqa': vqa.VQA,
+    #'mscoco': mscoco.MSCOCO,
+    #'mscoco_small': mscoco.MSCOCOSMALL,
+    #'mismatched_caption': mscoco.MismatchedCaption,
+    #'vqa': vqa.VQA,
 
     # Medical images.
-    'chexpert': chexpert.CheXpert,
-    'xray8': xray8.ChestXray8,
+    #'chexpert': chexpert.CheXpert,
+    #'xray8': xray8.ChestXray8,
 
     # Natural images.
     'aircraft': aircraft.Aircraft,
@@ -38,39 +38,39 @@ DATASET_DICT = {
     'vgg_flower_small': vgg_flower.VGGFlowerSmall,
 
     # Sensor.
-    'pamap2': pamap2.PAMAP2,
-    'pamap2_spectrogram': pamap2.SpectrogramPAMAP2,
+    #'pamap2': pamap2.PAMAP2,
+    #'pamap2_spectrogram': pamap2.SpectrogramPAMAP2,
 
     # Speech.
-    'audio_mnist': audio_mnist.AudioMNIST,
-    'fluent_speech_action': fluent_speech.FluentSpeechAction,
-    'fluent_speech_object': fluent_speech.FluentSpeechObject,
-    'fluent_speech_location': fluent_speech.FluentSpeechLocation,
-    'google_speech': google_speech.GoogleSpeechCommands,
-    'librispeech': librispeech.LibriSpeech,
-    'librispeech_transfer': librispeech.LibriSpeechTransfer,
-    'voxceleb1': voxceleb1.VoxCeleb1,
+    #'audio_mnist': audio_mnist.AudioMNIST,
+    #'fluent_speech_action': fluent_speech.FluentSpeechAction,
+    #'fluent_speech_object': fluent_speech.FluentSpeechObject,
+    #'fluent_speech_location': fluent_speech.FluentSpeechLocation,
+    #'google_speech': google_speech.GoogleSpeechCommands,
+    #'librispeech': librispeech.LibriSpeech,
+    #'librispeech_transfer': librispeech.LibriSpeechTransfer,
+    #'voxceleb1': voxceleb1.VoxCeleb1,
 
     # Text.
-    'cola': glue.COLA,
-    'mnli_matched': glue.MNLIMatched,
-    'mnli_mismatched': glue.MNLIMismatched,
-    'mrpc': glue.MRPC,
-    'qnli': glue.QNLI,
-    'qqp': glue.QQP,
-    'rte': glue.RTE,
-    'sst2': glue.SST2,
-    'stsb': glue.STSB,
-    'wikitext103': wikitext.WikiText103,
-    'wnli': glue.WNLI,
-    'mc4': mc4.MC4,
-    'paws_en': pawsx.PawsEN,
-    'paws_fr': pawsx.PawsFR,
-    'paws_es': pawsx.PawsES,
-    'paws_de': pawsx.PawsDE,
-    'paws_zh': pawsx.PawsZH,
-    'paws_ja': pawsx.PawsJA,
-    'paws_ko': pawsx.PawsKO,
+    #'cola': glue.COLA,
+    #'mnli_matched': glue.MNLIMatched,
+    #'mnli_mismatched': glue.MNLIMismatched,
+    #'mrpc': glue.MRPC,
+    #'qnli': glue.QNLI,
+    #'qqp': glue.QQP,
+    #'rte': glue.RTE,
+    #'sst2': glue.SST2,
+    #'stsb': glue.STSB,
+    #'wikitext103': wikitext.WikiText103,
+    #'wnli': glue.WNLI,
+    #'mc4': mc4.MC4,
+    #'paws_en': pawsx.PawsEN,
+    #'paws_fr': pawsx.PawsFR,
+    #'paws_es': pawsx.PawsES,
+    #'paws_de': pawsx.PawsDE,
+    #'paws_zh': pawsx.PawsZH,
+    #'paws_ja': pawsx.PawsJA,
+    #'paws_ko': pawsx.PawsKO,
 }
 
 PRETRAINING_DATASETS = [
