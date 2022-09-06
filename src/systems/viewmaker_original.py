@@ -612,111 +612,172 @@ class CevaViewmakerSystem(OriginalViewmakerSystem):
 
         return [view_optim1, view_optim2,disc_optim] , []
 
-# class ConditionalViewmakerSystem(ViewmakerOriginalSystemDisc):
+class TrafficViewMaker(OriginalViewmakerSystem):
 
-#     def create_viewmaker(self, **kwargs):
-#         view_model = ConditionalViewmaker(
-#             num_channels=self.train_dataset.IN_CHANNELS,
-#             distortion_budget=self.config.model_params.get("additive_budget", 0.05),
-#             clamp=False
-#         )
-#         return view_model
+    def setup(self, stage):
+        OriginalViewmakerSystem.setup(self,stage)
+
+        self.disc = TinyP2PDiscriminator(in_channels=self.dataset.spec()[0].in_channels,
+                                         wgan=self.config.disc.wgan,
+                                         blocks_num=self.config.disc.conv_blocks)
+
     
-#     def view(self, imgs, with_unnormalized=False):
-#         if 'Expert' in self.config.system:
-#             raise RuntimeError('Cannot call self.view() with Expert system')
-#         unnormalized, conditions_indicies = self.viewmaker(imgs)
-#         views = self.normalize(unnormalized)
-#         if with_unnormalized:
-#             return views, unnormalized ,conditions_indicies
-#         return views ,conditions_indicies
+    def objective(self, emb_dict):
+        view_maker_loss_weight = self.config.loss_params.view_maker_loss_weight
+        original_embds = self.model.forward([emb_dict["originals"]])
 
-#     def make_views(self, batch):
-#         indices, img, labels = batch
-#         views1, unnormalized_view1 ,conditions_indicies1 = self.view(img, True)
-#         # views2, unnormalized_view2 ,conditions_indicies2 = self.view(img, True)
-#         emb_dict = {
-#             'indices': indices,
-#             'originals': img,
-#             'views1': views1,
-#             'unnormalized_view1': unnormalized_view1,
-#             'conditions_indicies1': conditions_indicies1,
-#             'labels': labels
-#         }
-#         return emb_dict
+        loss_function2 = AdversarialSimCLRLoss(
+            embs1=original_embds,
+            embs2=emb_dict['view2_embs'],
+            t=self.config.loss_params.t,
+            view_maker_loss_weight=view_maker_loss_weight
+        ).get_loss()
 
-#     def ssl_forward(self, batch):
-#         emb_dict = self.make_views(batch)
-#         emb_dict.update({'view1_embs': self.model.forward([emb_dict["views1"]]),
-#                          'original_permutated_embs': self.model.forward([emb_dict["originals"][emb_dict["conditions_indicies1"]]]), }) # reorderd by conditions_indicies
-#         return emb_dict
+        loss_function1 = AdversarialSimCLRLoss(
+            embs1=original_embds,
+            embs2=emb_dict['view1_embs'],
+            t=self.config.loss_params.t,
+            view_maker_loss_weight=view_maker_loss_weight
+        ).get_loss()
 
-#     def objective(self, emb_dict):
-#         view_maker_loss_weight = self.config.loss_params.view_maker_loss_weight
-#         loss_function = AdversarialSimCLRLoss(
-#             embs1=emb_dict['view1_embs'],
-#             embs2=emb_dict['original_permutated_embs'],
-#             t=self.config.loss_params.t,
-#             view_maker_loss_weight=view_maker_loss_weight
-#         )
+        loss_function3 = AdversarialSimCLRLoss(
+            embs1=emb_dict['view1_embs'],
+            embs2=emb_dict['view2_embs'],
+            t=self.config.loss_params.t,
+            view_maker_loss_weight=view_maker_loss_weight
+        ).get_loss()
 
-#         encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = loss_function.get_loss()
-#         return encoder_loss, encoder_acc, -1*view_maker_loss, positive_sim, negative_sim
+        encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = ( (i+j+k) / 3 for i,j,k in zip(loss_function1,loss_function2,loss_function3))
+        positive_similarity_of_views = loss_function3[3]
+        positive_sim = (loss_function1[3] + loss_function2[3])/2
 
-#     def gan_forward(self, batch, step_output, optimizer_idx=2):
-#         indices, img, _ = batch
+        return encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim , positive_similarity_of_views
+
+    def validation_step(self, batch, batch_idx):
+        step_output = self.ssl_forward(batch)
+        step_output.update(self.gan_forward(batch, step_output))
+        encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim,positive_similarity_of_views = self.objective(step_output)
+        disc_loss, disc_acc, gen_loss, gen_acc, r1_reg = self.gan_objective(step_output)
         
-#         views1 = step_output["views1"]
+        output = OrderedDict({
+            'val_encoder_loss': encoder_loss,
+            'val_view_maker_loss': view_maker_loss,
+            'val_positive_sim': positive_sim,
+            'val_negative_sim': negative_sim,
+            'positive_similarity_of_views': positive_similarity_of_views,
+            'val_gen_loss': gen_loss,
+            'val_disc_loss': disc_loss,
+            'val_gen_acc': gen_acc,
+            'val_disc_acc': disc_acc,
+            # 'val_fake_score': fake_score,
+            # 'val_real_score': real_score,
+            'val_encoder_acc': encoder_acc
+        })
 
-#         img.requires_grad = True
-#         step_output['disc_r1_penalty'] = torch.tensor([0.0], device=self.device)
-#         if optimizer_idx == 2:
-#             step_output["real_score"] = self.disc(self.normalize(img))
-#             if self.disc.wgan:
-#                 try:
-#                     step_output["disc_r1_penalty"] = self.disc.r1_penalty(step_output["real_score"], img)
-#                 # this fails in validation mode
-#                 except RuntimeError as e:
-#                     pass
-#         step_output["fake_score"] = torch.cat([self.disc(views1)], dim=0)
-#         return step_output
+        return output
 
-#     def wandb_logging(self, emb_dict):
-#         with torch.no_grad():
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        step_output = {'optimizer_idx': torch.tensor(optimizer_idx, device=self.device)}
+        # step_output = {'optimizer_idx': torch.tensor(0, device=self.device)}
+        step_output.update(self.ssl_forward(batch))
 
-#             # check optimizer index to log images only once
-#             # # Handle Tensor (dp) and int (ddp) cases
-#             optimizer_idx = self.get_optimizer_index(emb_dict)
-#             if optimizer_idx > 0:
-#                 return
+        encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim , positive_similarity_of_views = self.objective(step_output)
+        step_output.update(self.gan_forward(batch, step_output, optimizer_idx))
+        # step_output.update(self.gan_forward(batch, step_output))
+        disc_loss, disc_acc, gen_loss, gen_acc, r1_reg = self.gan_objective(step_output)
 
-#             if self.global_step % self.logging_steps == 0:
-#                 img = emb_dict['originals'][:self.disp_amnt]
-#                 unnormalized_view1 = emb_dict['unnormalized_view1'][:self.disp_amnt]
-#                 conditions_indicies = torch.cat(emb_dict["conditions_indicies1"]).cpu().numpy()
-#                 if len(self.config.gpus) > 1:
-#                     conditions_indicies = 2*conditions_indicies
-#                     conditions_indicies[::2]= conditions_indicies[::2] - 1
-#                 target_originals = emb_dict['originals'][conditions_indicies][:self.disp_amnt]
+        # loss = view_maker_loss + self.config.disc.adv_loss_weight * gen_loss
+        if optimizer_idx == 0:
+            loss = self.config.disc.enc_loss_weight * view_maker_loss
 
-#                 diff_heatmap = heatmap_of_view_effect(img, unnormalized_view1)
-#                 cat = torch.cat(
-#                     [img,
-#                      unnormalized_view1,
-#                      target_originals,
-#                      diff_heatmap,])
+        elif optimizer_idx == 1:
+            loss = self.config.disc.adv_loss_weight_gen * gen_loss
 
-#                 if cat.shape[1] > 3:
-#                     cat = cat.mean(1).unsqueeze(1)
-
-#                 grid = make_grid(cat, nrow=self.disp_amnt)
-#                 grid = resize(torch.clamp(grid, 0, 1.0), (6*150, 10*150), Image.NEAREST)
+        elif optimizer_idx == 2:
+            loss = self.config.disc.adv_loss_weight * disc_loss
 
 
-#                 if isinstance(self.logger, WandbLogger):
-#                     wandb.log({
-#                         "original_vs_views": wandb.Image(grid, caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
-#                         "mean distortion": (unnormalized_view1 - img).abs().mean(),
-#                     })
-#                 else:
-#                     self.logger.experiment.add_image('original_vs_views', grid, self.global_step)
+
+        metrics = {'view_maker_loss': view_maker_loss,
+                    'generator_loss': gen_loss,
+                    'gen_acc': gen_acc,
+                    'disc_loss': disc_loss,
+                    'disc_acc': disc_acc,
+                    'positive_sim': positive_sim,
+                    'negative_sim': negative_sim,
+                    'positive_similarity_of_views': positive_similarity_of_views,
+                    # 'fake_score': fake_score,
+                    # 'real_score': real_score,
+                    'view_maker_total_loss': loss}
+
+
+        return [loss, step_output, metrics]
+
+    def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False):
+        # if optimizer_idx == 0: # dont optimize encoder
+            # optimizer_closure()
+        # else:
+        #     super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
+        super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
+
+    def gan_forward(self, batch, step_output, optimizer_idx=2):
+        indices, img, _ = batch
+        views1, views2 = step_output["views1"], step_output["views2"]
+
+        img.requires_grad = True
+        step_output['disc_r1_penalty'] = torch.tensor([0.0], device=self.device)
+        step_output["real_score"] = self.disc(self.normalize(img))
+        step_output["fake_score"] = torch.cat([self.disc(views1), self.disc(views2)], dim=0)
+        return step_output
+
+    def gan_objective(self, emb_dict):
+        real_s = emb_dict.get('real_score')
+        fake_s = emb_dict['fake_score']
+        loss_n_acc = self.disc.calc_loss_and_acc(real_s, fake_s, r1_penalty=emb_dict['disc_r1_penalty'])
+        disc_loss = loss_n_acc.get("d_loss")
+        disc_acc = loss_n_acc.get("d_acc")
+        r1_reg = emb_dict.get('disc_r1_penalty')
+        gen_loss = loss_n_acc.get("g_loss")
+        gen_acc = loss_n_acc.get("g_acc")
+        return disc_loss, disc_acc, gen_loss, gen_acc, r1_reg
+
+    def get_vm_loss_weight(self):
+        if self.current_epoch < self.config.disc.gan_warmup:
+            return 0
+        else:
+            return 1
+
+    
+
+
+    def configure_optimizers(self):
+        view_optim_name = self.config.optim_params.get("viewmaker_optim")
+        if view_optim_name == 'adam':
+            view_optim1 = torch.optim.Adam(self.viewmaker.parameters(),
+                                          lr=self.config.optim_params.get("viewmaker_learning_rate", 0.001),
+                                          weight_decay=self.config.optim_params.weight_decay)
+            
+            view_optim2 = torch.optim.Adam(self.viewmaker.parameters(),
+                                          lr=self.config.optim_params.get("viewmaker_learning_rate", 0.001),
+                                          weight_decay=self.config.optim_params.weight_decay)
+        elif not view_optim_name or view_optim_name == 'sgd':
+            view_optim1 = torch.optim.SGD(
+                self.viewmaker.parameters(),
+                lr=self.config.optim_params.viewmaker_learning_rate or self.config.optim_params.learning_rate,
+                momentum=self.config.optim_params.momentum,
+                weight_decay=self.config.optim_params.weight_decay,
+            )
+
+            view_optim2 = torch.optim.SGD(
+                self.viewmaker.parameters(),
+                lr=self.config.optim_params.viewmaker_learning_rate or self.config.optim_params.learning_rate,
+                momentum=self.config.optim_params.momentum,
+                weight_decay=self.config.optim_params.weight_decay,
+            )
+        else:
+            raise ValueError(f'Optimizer {view_optim_name} not implemented')
+
+        disc_optim = torch.optim.Adam(self.disc.parameters(),lr=self.config.disc.lr)
+
+        return [view_optim1, view_optim2,disc_optim] , []
+

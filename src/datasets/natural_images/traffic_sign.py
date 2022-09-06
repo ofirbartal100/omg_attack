@@ -22,8 +22,12 @@ class TrafficSign(Dataset):
     INPUT_SIZE = (224, 224)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
-    MEAN = [0.335, 0.291, 0.295]
-    STD = [0.267, 0.249, 0.251]
+    # MEAN = [0.335, 0.291, 0.295]
+    # STD = [0.267, 0.249, 0.251]
+
+    MEAN = [0.3337, 0.3064, 0.3171]
+    STD = [0.2672, 0.2564, 0.2629]
+    # (0.3337, 0.3064, 0.3171), ( 0.2672, 0.2564, 0.2629)
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()

@@ -5,7 +5,7 @@ import hydra
 
 # pretrain_original
 # pretrain_original_disc
-@hydra.main(config_path='conf', config_name='ceva')
+@hydra.main(config_path='conf', config_name='traffic')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -57,28 +57,10 @@ def run(config):
         system = viewmaker_original.ConditionalViewmakerSystem(config)
     elif config.algorithm == 'tama_viewmaker':
         system = viewmaker_original.ViewmakerTAMA38System(config)
-    elif config.algorithm == 'double_original_viewmaker':
-        system = viewmaker_original.DoubleOriginalViewmakerSystem(config)
-    elif config.algorithm == 'double_original_viewmaker_unlearn':
-        system = viewmaker_original.DoubleViewmakerUnlearnSystem(config)
-    elif config.algorithm == 'double_original_viewmaker_disc':
-        system = viewmaker_original.DoubleOriginalViewmakerDiscSystem(config)
-    elif config.algorithm == 'viewmaker_coop':
-        system = viewmaker.ViewmakerCoopSystem(config)
     elif config.algorithm == 'viewmaker_disc':
         system = viewmaker.ViewmakerSystemDisc(config)
-    elif config.algorithm == 'double_viewmaker_disc':
-        system = viewmaker.DoubleViewmakerDiscSystem(config)
-    elif config.algorithm == 'double_viewmaker_freq':
-        system = viewmaker.DoubleViewmakerFreqSystem(config)
-    elif config.algorithm == 'double_viewmaker_spatial':
-        system = viewmaker.DoubleViewmakerSpatialSystem(config)
-    elif config.algorithm == 'viewmaker_transformer':
-        system = viewmaker.ViewmakerTransformerSystem(config)
-    elif config.algorithm == 'double_viewmaker_schyzo_freq':
-        system = viewmaker.DoubleViewmakerSchyzoFreqSystem(config)
-    elif config.algorithm == 'triple_vm':
-        system = viewmaker.TripleViewmakerDiscEMASystem(config)
+    elif config.algorithm == 'traffic_viewmaker':
+        system = viewmaker_original.TrafficViewMaker(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 
