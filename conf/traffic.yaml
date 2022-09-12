@@ -22,7 +22,7 @@ disc:
   enc_loss_weight: 2
 
 
-debug: true
+debug: false
 num_workers: null 
 
 exp:
@@ -36,10 +36,10 @@ trainer:
   limit_val_batches: 1.0
   resume_from_checkpoint: null #/workspace/dabs/exp/models/ceva_disc/epoch=26-step=30000.ckpt
   precision: 32  # set to 16 for O1 mixed precision, 32 for O0 full precision
-  max_steps: 200_001
+  max_steps: 100_001
   gradient_clip_val: 0
   distributed_backend: dp
-  model_checkpoint_freq: 50_000
+  model_checkpoint_freq: 30_000
 
 optim:
   name: sgd
