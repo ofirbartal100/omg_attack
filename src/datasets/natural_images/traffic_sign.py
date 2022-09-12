@@ -10,6 +10,7 @@ from torchvision import transforms
 from torchvision.datasets.utils import download_and_extract_archive
 
 from dabs.src.datasets.specs import Input2dSpec
+import imgaug.augmenters as iaa
 
 TRAFFICSIGN_RESOURCES = {
     'traffic_sign': 'https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Training_Images.zip',
@@ -33,11 +34,20 @@ class TrafficSign(Dataset):
         super().__init__()
         self.train = train
         self.root = os.path.join(base_root, 'natural_images', 'traffic_sign')
+        # self.transforms = transforms.Compose(
+        #     [transforms.Resize(self.INPUT_SIZE),
+        #      transforms.CenterCrop(self.INPUT_SIZE),
+        #      transforms.ToTensor()]
+        # )
+
         self.transforms = transforms.Compose(
-            [transforms.Resize(self.INPUT_SIZE),
-             transforms.CenterCrop(self.INPUT_SIZE),
+            [iaa.Sequential([
+                iaa.Resize(32),
+                iaa.pillike.Equalize(),
+                ]).augment_image,
              transforms.ToTensor()]
         )
+
 
         if download:
             self.download_dataset()
@@ -93,7 +103,8 @@ class TrafficSign(Dataset):
         path = self.paths[index]
         label = self.labels[index]
         image = Image.open(path).convert(mode='RGB')
-        image = self.transforms(image)
+        # image = self.transforms(image)
+        image = self.transforms(np.array(image))
         return index, image, label
 
     @staticmethod
