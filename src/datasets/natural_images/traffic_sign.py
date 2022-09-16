@@ -34,19 +34,19 @@ class TrafficSign(Dataset):
         super().__init__()
         self.train = train
         self.root = os.path.join(base_root, 'natural_images', 'traffic_sign')
-        # self.transforms = transforms.Compose(
-        #     [transforms.Resize(self.INPUT_SIZE),
-        #      transforms.CenterCrop(self.INPUT_SIZE),
-        #      transforms.ToTensor()]
-        # )
-
         self.transforms = transforms.Compose(
-            [iaa.Sequential([
-                iaa.Resize(32),
-                iaa.pillike.Equalize(),
-                ]).augment_image,
+            [transforms.Resize(self.INPUT_SIZE),
+             transforms.CenterCrop(self.INPUT_SIZE),
              transforms.ToTensor()]
         )
+
+        # self.transforms = transforms.Compose(
+        #     [iaa.Sequential([
+        #         iaa.Resize(32),
+        #         iaa.pillike.Equalize(),
+        #         ]).augment_image,
+        #      transforms.ToTensor()]
+        # )
 
 
         if download:
@@ -103,8 +103,8 @@ class TrafficSign(Dataset):
         path = self.paths[index]
         label = self.labels[index]
         image = Image.open(path).convert(mode='RGB')
-        # image = self.transforms(image)
-        image = self.transforms(np.array(image))
+        image = self.transforms(image)
+        # image = self.transforms(np.array(image))
         return index, image, label
 
     @staticmethod

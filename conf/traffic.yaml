@@ -9,9 +9,10 @@ system: TrafficViewmakerSystem
 # for sweep
 enc_every: 0
 start_enc: 0
+embd_dim: 350
 
 disc:
-  adv_loss_weight: 1
+  adv_loss_weight: 4
   conv_blocks: 4
   dis_skip_steps: 0
   gan_warmup: 1
@@ -19,7 +20,7 @@ disc:
   r1_penalty_weight: 0.00001
   wgan: false
   adv_loss_weight_gen: 4
-  enc_loss_weight: 2
+  enc_loss_weight: 5
 
 
 debug: false
@@ -59,7 +60,7 @@ model_params:
   noise_dim: 100
   num_res_blocks: 3
   additive: 1
-  additive_budget: 0.025
+  additive_budget: 0.05
   multiplicative: 0
   multiplicative_budget: 0.05
   tps: 0

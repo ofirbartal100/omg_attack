@@ -44,7 +44,7 @@ class OriginalViewmakerSystem(BaseSystem):
         super().setup(self)
         self.viewmaker = self.create_viewmaker(name='VM')
         sampled_data_size = len(self.train_dataset_ss) # for parital % of data
-        self.memory_bank = MemoryBank(sampled_data_size, 128)
+        self.memory_bank = MemoryBank(sampled_data_size, self.config.embd_dim)
         self.memory_bank_labels = MemoryBank(sampled_data_size, 1, dtype=int)
     
     def forward(self, x, prehead=False):
@@ -614,6 +614,7 @@ class CevaViewmakerSystem(OriginalViewmakerSystem):
 
 class TrafficViewMaker(OriginalViewmakerSystem):
 
+
     def setup(self, stage):
         OriginalViewmakerSystem.setup(self,stage)
 
@@ -648,9 +649,15 @@ class TrafficViewMaker(OriginalViewmakerSystem):
         ).get_loss()
 
         encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = ( (i+j+k) / 3 for i,j,k in zip(loss_function1,loss_function2,loss_function3))
+        # encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = loss_function1
         positive_similarity_of_views = loss_function3[3]
         positive_sim = (loss_function1[3] + loss_function2[3])/2
 
+        o = self.model.traffic_model.forward_original(emb_dict["originals"]).max(1, keepdim=True)[1]
+        v1 = self.model.traffic_model.forward_original(emb_dict["views1"]).max(1, keepdim=True)[1]
+        v2 = self.model.traffic_model.forward_original(emb_dict["views2"]).max(1, keepdim=True)[1]
+
+        encoder_acc = ((o==v1).sum() + (o==v2).sum())/(2*len(o))
         return encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim , positive_similarity_of_views
 
     def validation_step(self, batch, batch_idx):
@@ -660,7 +667,7 @@ class TrafficViewMaker(OriginalViewmakerSystem):
         disc_loss, disc_acc, gen_loss, gen_acc, r1_reg = self.gan_objective(step_output)
         
         output = OrderedDict({
-            'val_encoder_loss': encoder_loss,
+            # 'val_encoder_loss': encoder_loss,
             'val_view_maker_loss': view_maker_loss,
             'val_positive_sim': positive_sim,
             'val_negative_sim': negative_sim,
@@ -703,6 +710,7 @@ class TrafficViewMaker(OriginalViewmakerSystem):
                     'gen_acc': gen_acc,
                     'disc_loss': disc_loss,
                     'disc_acc': disc_acc,
+                    'encoder_acc': encoder_acc,
                     'positive_sim': positive_sim,
                     'negative_sim': negative_sim,
                     'positive_similarity_of_views': positive_similarity_of_views,
@@ -715,9 +723,11 @@ class TrafficViewMaker(OriginalViewmakerSystem):
 
     def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False):
         # if optimizer_idx == 0: # dont optimize encoder
-            # optimizer_closure()
-        # else:
+        #     # optimizer_closure()
         #     super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
+        # else:
+        #     optimizer_closure()
+        #     # super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
         super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False)
 
     def gan_forward(self, batch, step_output, optimizer_idx=2):
