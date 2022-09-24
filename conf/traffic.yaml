@@ -12,15 +12,15 @@ start_enc: 0
 embd_dim: 350
 
 disc:
-  adv_loss_weight: 4
+  adv_loss_weight: 1
   conv_blocks: 4
   dis_skip_steps: 0
   gan_warmup: 1
   lr: 0.0001
   r1_penalty_weight: 0.00001
   wgan: false
-  adv_loss_weight_gen: 4
-  enc_loss_weight: 5
+  adv_loss_weight_gen: 10
+  enc_loss_weight: 1
 
 
 debug: false
@@ -28,7 +28,7 @@ num_workers: null
 
 exp:
   base_dir: /workspace/dabs/exp/models
-  name: traffic_gan
+  name: traffic_gan_presentation
 
 trainer:
   weights_summary: top
@@ -53,14 +53,14 @@ optim_params:
   momentum: 0.9
   weight_decay: 0
   viewmaker_optim: adam
-  viewmaker_learning_rate: 0.001
+  viewmaker_learning_rate: 0.0001 #0.001
 
 model_params: 
   dimensions: 3
   noise_dim: 100
   num_res_blocks: 3
   additive: 1
-  additive_budget: 0.05
+  additive_budget: 0.015
   multiplicative: 0
   multiplicative_budget: 0.05
   tps: 0
@@ -88,5 +88,5 @@ defaults:
   - model: traffic_model
 
 dataset:
-  batch_size: 128 #24
+  batch_size: 256 #128 #24
   low_data: 1
