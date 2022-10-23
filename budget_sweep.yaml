@@ -1,0 +1,25 @@
+program:  /workspace/dabs/pretrain.py
+method: grid
+parameters:
+  exp.name:
+    value: budget_sweep_agent
+  disc.adv_loss_weight:
+    value: 1
+  disc.adv_loss_weight_gen:
+    value: 10
+  disc.enc_loss_weight:
+    value: 1
+  model_params.additive_budget:
+    values: [0.0025, 0.005, 0.0075 ,0.01 ,0.0125 , 0.015]
+  dataset.batch_size:
+    value: 256
+  optim_params.viewmaker_learning_rate:
+    value: 0.0001
+  disc.lr:
+    value: 0.0001
+  
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

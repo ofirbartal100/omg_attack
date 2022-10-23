@@ -12,6 +12,7 @@ from torchvision.datasets.utils import download_and_extract_archive
 from dabs.src.datasets.specs import Input2dSpec
 import imgaug.augmenters as iaa
 
+# https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/published-archive.html
 TRAFFICSIGN_RESOURCES = {
     'traffic_sign': 'https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Training_Images.zip',
 }

@@ -758,7 +758,8 @@ class TrafficViewMaker(OriginalViewmakerSystem):
             return 1
 
     
-
+    def predict(self, x):
+        return self.model.traffic_model.forward_original(self.normalize(x)).max(1, keepdim=True)[1]
 
     def configure_optimizers(self):
         view_optim_name = self.config.optim_params.get("viewmaker_optim")
