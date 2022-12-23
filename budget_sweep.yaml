@@ -2,7 +2,7 @@ program:  /workspace/dabs/pretrain.py
 method: grid
 parameters:
   exp.name:
-    value: budget_sweep_agent
+    value: budget_equalized_sweep_agent
   disc.adv_loss_weight:
     value: 1
   disc.adv_loss_weight_gen:

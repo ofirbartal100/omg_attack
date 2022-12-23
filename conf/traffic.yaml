@@ -28,7 +28,7 @@ num_workers: null
 
 exp:
   base_dir: /workspace/dabs/exp/models
-  name: traffic_gan_presentation
+  name: traffic_gan_budget_equalized
 
 trainer:
   weights_summary: top

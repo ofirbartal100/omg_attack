@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from collections import OrderedDict
 from torch.nn import functional as F
-
+import numpy as np
 import PIL.Image as Image
 from torchvision.transforms.functional import resize
 from pytorch_lightning.loggers import WandbLogger
@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 import wandb
 import random
 import matplotlib.pyplot as plt
-from viewmaker.src.gans.tiny_pix2pix import TinyP2PDiscriminator
+from viewmaker.src.gans.tiny_pix2pix import Discriminator, TinyP2PDiscriminator
 
 from dabs.src.datasets import natural_images
 from dabs.src.systems.base_system import BaseSystem, get_model
@@ -24,7 +24,7 @@ from viewmaker.src.utils import utils
 from dabs.src.models.conditional_viewmaker import ConditionalViewmaker
 
 from stylegan2_pytorch.model import Discriminator as StyleGan2Disc
-
+from itertools import chain
 
 class OriginalViewmakerSystem(BaseSystem):
     '''System for Shuffled Embedding Detection.
@@ -34,7 +34,7 @@ class OriginalViewmakerSystem(BaseSystem):
     '''
 
     def __init__(self, config):
-        self.disp_amnt = 10
+        self.disp_amnt = 8
         self.logging_steps = 100
         if config.debug:
             self.logging_steps = 10
@@ -43,6 +43,9 @@ class OriginalViewmakerSystem(BaseSystem):
     def setup(self, stage):
         super().setup(self)
         self.viewmaker = self.create_viewmaker(name='VM')
+        if stage == 'face_mask':
+            self.viewmaker.with_mask=True
+
         sampled_data_size = len(self.train_dataset_ss) # for parital % of data
         self.memory_bank = MemoryBank(sampled_data_size, self.config.embd_dim)
         self.memory_bank_labels = MemoryBank(sampled_data_size, 1, dtype=int)
@@ -94,13 +97,13 @@ class OriginalViewmakerSystem(BaseSystem):
         loss, emb_dict, metrics = train_step_outputs
         # reduce distributed results
         loss = loss.mean()
-        metrics = {k: v.mean() for k, v in metrics.items()}
+        metrics = {k: v.mean().detach().cpu() for k, v in metrics.items()}
         self.wandb_logging(emb_dict)
         self.log_dict(metrics)
 
         self.add_to_memory_bank(emb_dict)
 
-        return loss
+        return {'loss':loss} #,'encoder_acc':metrics['encoder_acc']}
 
     def objective(self, emb_dict):
         view_maker_loss_weight = self.config.loss_params.view_maker_loss_weight
@@ -247,7 +250,7 @@ class OriginalViewmakerSystem(BaseSystem):
         view_model = Viewmaker(
             num_channels=self.train_dataset.IN_CHANNELS,
             distortion_budget=self.config.model_params.get("additive_budget", 0.05),
-            clamp=False
+            clamp=True
         )
         return view_model
 
@@ -426,7 +429,7 @@ from types import MethodType
 class CevaViewmakerSystem(OriginalViewmakerSystem):
 
     def setup(self, stage):
-        OriginalViewmakerSystem.setup(self,stage)
+        OriginalViewmakerSystem.setup(self,'face_mask')
         
         # def new_get_delta(self, y_pixels, eps=1e-4):
         #     return y_pixels
@@ -455,7 +458,7 @@ class CevaViewmakerSystem(OriginalViewmakerSystem):
 
     def objective(self, emb_dict):
         view_maker_loss_weight = self.config.loss_params.view_maker_loss_weight
-        original_embds = self.model.forward([emb_dict["originals"]])
+        original_embds = self.model.forward([self.normalize(emb_dict["originals"])])
 
         loss_function2 = AdversarialSimCLRLoss(
             embs1=original_embds,
@@ -657,11 +660,17 @@ class TrafficViewMaker(OriginalViewmakerSystem):
         v1 = self.model.traffic_model.forward_original(emb_dict["views1"]).max(1, keepdim=True)[1]
         v2 = self.model.traffic_model.forward_original(emb_dict["views2"]).max(1, keepdim=True)[1]
 
+        emb_dict['model_original'] = o
+        emb_dict['model_view1'] = v1
+        emb_dict['model_view2'] = v2
+
         encoder_acc = ((o==v1).sum() + (o==v2).sum())/(2*len(o))
         return encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim , positive_similarity_of_views
 
     def validation_step(self, batch, batch_idx):
         step_output = self.ssl_forward(batch)
+        step_output['labels'] = batch[-1]
+
         step_output.update(self.gan_forward(batch, step_output))
         encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim,positive_similarity_of_views = self.objective(step_output)
         disc_loss, disc_acc, gen_loss, gen_acc, r1_reg = self.gan_objective(step_output)
@@ -687,6 +696,8 @@ class TrafficViewMaker(OriginalViewmakerSystem):
         step_output = {'optimizer_idx': torch.tensor(optimizer_idx, device=self.device)}
         # step_output = {'optimizer_idx': torch.tensor(0, device=self.device)}
         step_output.update(self.ssl_forward(batch))
+
+        step_output['labels'] = batch[-1]
 
         encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim , positive_similarity_of_views = self.objective(step_output)
         step_output.update(self.gan_forward(batch, step_output, optimizer_idx))
@@ -792,3 +803,252 @@ class TrafficViewMaker(OriginalViewmakerSystem):
 
         return [view_optim1, view_optim2,disc_optim] , []
 
+    def wandb_logging(self, emb_dict):
+        with torch.no_grad():
+
+            # check optimizer index to log images only once
+            # # Handle Tensor (dp) and int (ddp) cases
+            optimizer_idx = self.get_optimizer_index(emb_dict)
+            if optimizer_idx > 0:
+                return
+
+            if self.global_step % self.logging_steps == 0:
+                img = emb_dict['originals'][:self.disp_amnt]
+                unnormalized_view1 = emb_dict['unnormalized_view1'][:self.disp_amnt]
+                unnormalized_view2 = emb_dict['unnormalized_view2'][:self.disp_amnt]
+
+                diff_heatmap = heatmap_of_view_effect(img, unnormalized_view1)
+                diff_heatmap2 = heatmap_of_view_effect(img, unnormalized_view2)
+                cat = torch.cat(
+                    [img,
+                     unnormalized_view1,
+                     unnormalized_view2,
+                     diff_heatmap,
+                     diff_heatmap2,
+                     (diff_heatmap - diff_heatmap2).abs()])
+
+                if cat.shape[1] > 3:
+                    cat = cat.mean(1).unsqueeze(1)
+
+                grid = make_grid(cat, nrow=self.disp_amnt)
+                grid = resize(torch.clamp(grid, 0, 1.0), (6*150, 10*150), Image.NEAREST)
+
+
+                if isinstance(self.logger, WandbLogger):
+                    wandb.log({
+                        "original_vs_views": wandb.Image(grid, caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
+                        "mean distortion": (unnormalized_view1 - img).abs().mean(),
+                    })
+                else:
+                    self.logger.experiment.add_image('original_vs_views', grid, self.global_step)
+
+    
+    
+
+class BirdsViewMaker(TrafficViewMaker):
+    
+    def setup(self, stage):
+        OriginalViewmakerSystem.setup(self,stage)
+        self.viewmaker = Viewmaker(
+            num_channels=self.train_dataset.IN_CHANNELS,
+            distortion_budget=self.config.model_params.get("additive_budget", 0.05),
+            clamp=False,
+            # downsample_to=112
+        )
+
+        # self.disc = TinyP2PDiscriminator(in_channels=self.dataset.spec()[0].in_channels,
+        #                                  wgan=self.config.disc.wgan,
+        #                                  blocks_num=self.config.disc.conv_blocks)
+
+        # self.disc = UNetD(nc=self.dataset.spec()[0].in_channels)
+        self.disc = Discriminator(input_shape=(3,224,224))
+
+
+    def objective(self, emb_dict):
+        view_maker_loss_weight = self.config.loss_params.view_maker_loss_weight
+        original_embds = self.model.forward([self.normalize(emb_dict["originals"])])
+
+        loss_function2 = AdversarialSimCLRLoss(
+            embs1=original_embds,
+            embs2=emb_dict['view2_embs'],
+            t=self.config.loss_params.t,
+            view_maker_loss_weight=view_maker_loss_weight
+        ).get_loss()
+
+        loss_function1 = AdversarialSimCLRLoss(
+            embs1=original_embds,
+            embs2=emb_dict['view1_embs'],
+            t=self.config.loss_params.t,
+            view_maker_loss_weight=view_maker_loss_weight
+        ).get_loss()
+
+        loss_function3 = AdversarialSimCLRLoss(
+            embs1=emb_dict['view1_embs'],
+            embs2=emb_dict['view2_embs'],
+            t=self.config.loss_params.t,
+            view_maker_loss_weight=view_maker_loss_weight
+        ).get_loss()
+
+        encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = ( (i+j+k) / 3 for i,j,k in zip(loss_function1,loss_function2,loss_function3))
+        # encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = loss_function1
+        positive_similarity_of_views = loss_function3[3]
+        positive_sim = (loss_function1[3] + loss_function2[3])/2
+
+
+        
+        # confused_orig = (emb_dict['model_original_pred'].flatten() == emb_dict['labels'].flatten()).flatten()[:self.disp_amnt]
+
+        o,_ = self.model.birds_model(emb_dict["originals"])
+        o_prob = F.softmax(o, dim = -1)
+        o = o_prob.argmax(1, keepdim = True)
+
+        v1,_ = self.model.birds_model(emb_dict["views1"])
+        v1_prob = F.softmax(v1, dim = -1)
+        v1 = v1_prob.argmax(1, keepdim = True)
+
+        v2,_ = self.model.birds_model(emb_dict["views2"])
+        v2_prob = F.softmax(v2, dim = -1)
+        v2 = v2_prob.argmax(1, keepdim = True)
+
+        emb_dict['model_original_pred'] = o
+        emb_dict['model_view1_pred'] = v1
+        emb_dict['model_view2_pred'] = v2
+
+        encoder_acc = ((o==v1).sum() + (o==v2).sum())/(2*len(o))
+
+        emb_dict['model_acc_top1'] , emb_dict['model_acc_top5'] = BirdsViewMaker.calculate_topk_accuracy(o_prob,emb_dict['labels'])
+        emb_dict['view1_acc_top1'] , emb_dict['view1_acc_top5'] = BirdsViewMaker.calculate_topk_accuracy(v1_prob,emb_dict['labels'])
+        emb_dict['view2_acc_top1'] , emb_dict['view2_acc_top5'] = BirdsViewMaker.calculate_topk_accuracy(v2_prob,emb_dict['labels'])
+
+        return encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim , positive_similarity_of_views
+
+   
+    def predict(self, x):
+        pred , _ = self.model.birds_model(self.normalize(x))
+        y_prob = F.softmax(pred, dim = -1)
+        pred = y_prob.argmax(1, keepdim = True)
+        return pred
+
+    @staticmethod
+    def calculate_topk_accuracy(y_pred, y, k = 5):
+        with torch.no_grad():
+            batch_size = y.shape[0]
+            _, top_pred = y_pred.topk(k, 1)
+            top_pred = top_pred.t()
+            correct = top_pred.eq(y.view(1, -1).expand_as(top_pred))
+            correct_1 = correct[:1].reshape(-1).float().sum(0, keepdim = True)
+            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim = True)
+            acc_1 = correct_1 / batch_size
+            acc_k = correct_k / batch_size
+        return acc_1, acc_k
+
+    @staticmethod
+    def paint_border(image, is_similar, pad = 1):
+        image[:,:pad] = 0
+        image[:,-pad:] = 0
+        image[:,:,:pad] = 0
+        image[:,:,-pad:] = 0
+
+        if is_similar:
+            image[1,:pad] = 1
+            image[1,-pad:] = 1
+            image[1,:,:pad] = 1
+            image[1,:,-pad:] = 1
+        else :
+            image[0,:pad] = 1
+            image[0,-pad:] = 1
+            image[0,:,:pad] = 1
+            image[0,:,-pad:] = 1
+
+        return image
+
+    def wandb_logging(self, emb_dict):
+        with torch.no_grad():
+
+            # check optimizer index to log images only once
+            # # Handle Tensor (dp) and int (ddp) cases
+            optimizer_idx = self.get_optimizer_index(emb_dict)
+            if optimizer_idx > 0:
+                return
+
+            if self.global_step % self.logging_steps == 0:
+                img = emb_dict['originals'][:self.disp_amnt]
+                unnormalized_view1 = emb_dict['unnormalized_view1'][:self.disp_amnt]
+                unnormalized_view2 = emb_dict['unnormalized_view2'][:self.disp_amnt]
+
+                diff_heatmap = heatmap_of_view_effect(img, unnormalized_view1)
+                diff_heatmap2 = heatmap_of_view_effect(img, unnormalized_view2)
+
+                confused_orig = (emb_dict['model_original_pred'].flatten() == emb_dict['labels'].flatten()).flatten()[:self.disp_amnt]
+                confused_v1 = (emb_dict['model_original_pred'] == emb_dict['model_view1_pred']).flatten()[:self.disp_amnt]
+                confused_v2 = (emb_dict['model_original_pred'] == emb_dict['model_view2_pred']).flatten()[:self.disp_amnt]
+
+                img_border = torch.cat([ BirdsViewMaker.paint_border(img[c],confused_orig[c],pad=5).unsqueeze(0)  for c in range(self.disp_amnt)],dim=0)
+                unnormalized_view1_border = torch.cat([ BirdsViewMaker.paint_border(unnormalized_view1[c],confused_v1[c],pad=5).unsqueeze(0)  for c in range(self.disp_amnt)],dim=0)
+                unnormalized_view2_border = torch.cat([ BirdsViewMaker.paint_border(unnormalized_view2[c],confused_v2[c],pad=5).unsqueeze(0)  for c in range(self.disp_amnt)],dim=0)
+
+
+                cat = torch.cat(
+                    [   img_border, #img,
+                        # unnormalized_view1,
+                        # unnormalized_view2,
+                        unnormalized_view1_border,
+                        unnormalized_view2_border,
+                        diff_heatmap,
+                        diff_heatmap2,
+                        (diff_heatmap - diff_heatmap2).abs()])
+
+                if cat.shape[1] > 3:
+                    cat = cat.mean(1).unsqueeze(1)
+
+                grid = make_grid(cat, nrow=self.disp_amnt)
+                grid = resize(torch.clamp(grid, 0, 1.0), (6*150, 10*150), Image.NEAREST)
+
+
+                if isinstance(self.logger, WandbLogger):
+                    wandb.log({
+                        "original_vs_views": wandb.Image(grid, caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
+                        "model_acc_top1": emb_dict['model_acc_top1'],
+                        "model_acc_top5": emb_dict['model_acc_top5'],
+                        "view_acc_top1": (emb_dict['view1_acc_top1']+emb_dict['view2_acc_top1'])/2,
+                        "view_acc_top5": (emb_dict['view1_acc_top5']+emb_dict['view2_acc_top5'])/2,
+                        "gen_every":self.config.gen_every
+                    })
+                else:
+                    self.logger.experiment.add_image('original_vs_views', grid, self.global_step)
+                    self.logger.experiment.add_scalar("model_acc_top1", emb_dict['model_acc_top1'], self.global_step)
+                    self.logger.experiment.add_scalar("model_acc_top5", emb_dict['model_acc_top5'], self.global_step)
+                    self.logger.experiment.add_scalar("view_acc_top1", (emb_dict['view1_acc_top1']+emb_dict['view2_acc_top1'])/2, self.global_step)
+                    self.logger.experiment.add_scalar("view_acc_top5", (emb_dict['view1_acc_top5']+emb_dict['view2_acc_top5'])/2, self.global_step)
+
+    def configure_optimizers(self):
+        view_optim1 = torch.optim.Adam(self.viewmaker.parameters(),
+                                        lr=self.config.optim_params.get("viewmaker_learning_rate", 0.001),
+                                        weight_decay=self.config.optim_params.weight_decay)
+        
+        view_optim2 = torch.optim.Adam(self.viewmaker.parameters(),
+                                        lr=self.config.optim_params.get("viewmaker_learning_rate", 0.001),
+                                        weight_decay=self.config.optim_params.weight_decay)
+        
+
+        disc_optim = torch.optim.Adam(self.disc.parameters(),lr=self.config.disc.lr)
+
+        return [view_optim1, view_optim2,disc_optim] , []
+
+    def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False):
+        if optimizer_idx == 1:
+            if self.trainer.global_step % self.config.gen_every == 0 and self.trainer.global_step > self.config.start_enc:
+                super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
+            else:
+                optimizer_closure()
+
+        else:
+            super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
+
+
+    def training_epoch_end(self, outputs) -> None:
+        mean_encoder_acc = np.mean(list(chain(*[ [oo['encoder_acc'].item() for oo in o] for o in outputs])))
+        if mean_encoder_acc>0.6:
+            self.config.gen_every = 2
+        elif mean_encoder_acc<0.3:
+            self.config.gen_every = 1

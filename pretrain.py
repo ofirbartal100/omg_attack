@@ -5,7 +5,7 @@ import hydra
 
 # pretrain_original
 # pretrain_original_disc
-@hydra.main(config_path='conf', config_name='traffic')
+@hydra.main(config_path='conf', config_name='ceva')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -61,6 +61,8 @@ def run(config):
         system = viewmaker.ViewmakerSystemDisc(config)
     elif config.algorithm == 'traffic_viewmaker':
         system = viewmaker_original.TrafficViewMaker(config)
+    elif config.algorithm == 'birds_viewmaker':
+        system = viewmaker_original.BirdsViewMaker(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 

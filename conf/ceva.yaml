@@ -7,19 +7,20 @@ algorithm: viewmaker_ceva_disc
 system: CevaViewmakerSystem
 
 # for sweep
-enc_every: 0
-start_enc: 0
+enc_every: 1
+start_enc: 30000
+embd_dim: 128
 
 disc:
-  adv_loss_weight: 6
+  adv_loss_weight: 9.133
   conv_blocks: 4
   dis_skip_steps: 0
   gan_warmup: 1
   lr: 0.0001
   r1_penalty_weight: 0.00001
   wgan: false
-  adv_loss_weight_gen: 2
-  enc_loss_weight: 0.3
+  adv_loss_weight_gen: 8.816
+  enc_loss_weight: 8.207
 
 
 debug: false
@@ -27,7 +28,7 @@ num_workers: null
 
 exp:
   base_dir: /workspace/dabs/exp/models
-  name: ceva_sweep
+  name: masked_lfw
 
 trainer:
   weights_summary: top
@@ -59,7 +60,7 @@ model_params:
   noise_dim: 100
   num_res_blocks: 3
   additive: 1
-  additive_budget: 0.025
+  additive_budget: 0.05
   multiplicative: 0
   multiplicative_budget: 0.05
   tps: 0
