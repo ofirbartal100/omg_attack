@@ -18,7 +18,7 @@ embd_dim: 2048
 enc_every: 1
 exp:
   base_dir: /workspace/dabs/exp/models
-  name: birds_gan_pix2pix_every_dyn_long
+  name: birds_dyn_resotre
 gen_every: 2
 gpus: [0]
 
@@ -46,7 +46,7 @@ model_params:
   viewmaker_downsample: false
 
   
-num_workers: None
+num_workers: null
 optim:
   lr: 0.03
   momentum: 0.9
@@ -70,7 +70,7 @@ trainer:
   max_steps: 60001
   model_checkpoint_freq: 20000
   precision: 32
-  resume_from_checkpoint: None
+  resume_from_checkpoint: null
   seed: 0
   val_check_interval: 1.0
   weights_summary: top

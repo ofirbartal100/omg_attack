@@ -103,7 +103,7 @@ class OriginalViewmakerSystem(BaseSystem):
 
         self.add_to_memory_bank(emb_dict)
 
-        return {'loss':loss} #,'encoder_acc':metrics['encoder_acc']}
+        return {'loss':loss,'encoder_acc':metrics['encoder_acc']}
 
     def objective(self, emb_dict):
         view_maker_loss_weight = self.config.loss_params.view_maker_loss_weight
