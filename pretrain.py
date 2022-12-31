@@ -5,7 +5,7 @@ import hydra
 
 # pretrain_original
 # pretrain_original_disc
-@hydra.main(config_path='conf', config_name='birds')
+@hydra.main(config_path='conf', config_name='ceva')
 def run(config):
     # Deferred imports for faster tab completion
     import os

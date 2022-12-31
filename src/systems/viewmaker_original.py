@@ -103,7 +103,7 @@ class OriginalViewmakerSystem(BaseSystem):
 
         self.add_to_memory_bank(emb_dict)
 
-        return {'loss':loss,'encoder_acc':metrics['encoder_acc']}
+        return {'loss':loss } #,'encoder_acc':metrics['encoder_acc']}
 
     def objective(self, emb_dict):
         view_maker_loss_weight = self.config.loss_params.view_maker_loss_weight
@@ -429,19 +429,11 @@ from types import MethodType
 class CevaViewmakerSystem(OriginalViewmakerSystem):
 
     def setup(self, stage):
-        OriginalViewmakerSystem.setup(self,'face_mask')
-        
-        # def new_get_delta(self, y_pixels, eps=1e-4):
-        #     return y_pixels
-
-        # self.viewmaker.get_delta = MethodType(new_get_delta, self.viewmaker)
-
+        OriginalViewmakerSystem.setup(self,'no_face_mask')
 
         self.disc = StyleGan2Disc(size=256,channel_multiplier=2)
         checkpoint = torch.load("/workspace/stylegan2_pytorch/checkpoint/550000.pt")
         self.disc.load_state_dict(checkpoint["d"],strict=True)
-        # for p in self.disc.parameters():
-        #     p.requires_grad = False
         self.transform = transforms.Compose(
         [
             transforms.Resize(256),

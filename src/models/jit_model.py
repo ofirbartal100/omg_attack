@@ -12,10 +12,12 @@ class JitModel(BaseModel):
         super(JitModel, self).__init__(None)
         self.jit_model_path = jit_model_path
         self.jit_model = MobileFaceNet()
-        scope(self.jit_model,input_size=(3,112,112))
+        # scope(self.jit_model,input_size=(3,112,112))
         self.jit_model.load_state_dict(torch.load(jit_model_path))
+        self.jit_model.eval()
         for p in self.jit_model.parameters():
             p.requires_grad = False
+        
 
 
     def embed(self, inputs: Sequence[torch.Tensor]):
@@ -23,5 +25,8 @@ class JitModel(BaseModel):
         return x
 
     def encode(self, x: torch.Tensor, **kwargs):
+        if self.jit_model.training:
+            self.jit_model.eval()
+            
         return self.jit_model(x)
 

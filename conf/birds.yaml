@@ -81,5 +81,5 @@ defaults:
   - model: birds_model
 
 dataset:
-  batch_size: 32 #24
+  batch_size: 24 #24
   low_data: 1

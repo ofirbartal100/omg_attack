@@ -1,3 +1,3 @@
 name: jit_model
 kwargs:
-  jit_model_path: '/workspace/MobileFaceNet/checkpoints/mobilefacenet.pt'
+  jit_model_path: '/workspace/MobileFaceNet/checkpoints/mobilefacenet_complete.pt'

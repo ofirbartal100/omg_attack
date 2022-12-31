@@ -19,8 +19,8 @@ disc:
   lr: 0.0001
   r1_penalty_weight: 0.00001
   wgan: false
-  adv_loss_weight_gen: 8.816
-  enc_loss_weight: 8.207
+  adv_loss_weight_gen: 10
+  enc_loss_weight: 8
 
 
 debug: false
@@ -28,7 +28,7 @@ num_workers: null
 
 exp:
   base_dir: /workspace/dabs/exp/models
-  name: masked_lfw
+  name: lfw_fixed_every1
 
 trainer:
   weights_summary: top
@@ -87,5 +87,5 @@ defaults:
   - model: jit_model
 
 dataset:
-  batch_size: 32 #24
+  batch_size: 24 #24
   low_data: 1

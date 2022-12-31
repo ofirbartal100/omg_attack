@@ -56,10 +56,10 @@ class BaseSystem(pl.LightningModule):
         '''
         super().__init__()
         self.config = config
-        # self.dataset = lfw.LFW112 #DATASET_DICT[config.dataset.name]
+        self.dataset = lfw.LFW112 #DATASET_DICT[config.dataset.name]
         # self.dataset = traffic_sign.TrafficSignSmall #DATASET_DICT[config.dataset.name]
         # self.dataset = cu_birds.CUBirdsSmall #DATASET_DICT[config.dataset.name]
-        self.dataset = cu_birds.CUBirds #DATASET_DICT[config.dataset.name]
+        # self.dataset = cu_birds.CUBirds #DATASET_DICT[config.dataset.name]
         self.model = get_model(config, self.dataset)
         self.low_data = config.dataset.get("low_data", 1.0)
 
