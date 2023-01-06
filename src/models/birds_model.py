@@ -120,6 +120,7 @@ class BirdsModel(BaseModel):
         self.birds_model.load_state_dict(torch.load(birds_model_path))
         for p in self.birds_model.parameters():
             p.requires_grad = False
+        self.birds_model.eval()
 
 
     def embed(self, inputs: Sequence[torch.Tensor]):
@@ -127,6 +128,8 @@ class BirdsModel(BaseModel):
         return x
 
     def encode(self, x: torch.Tensor, **kwargs):
+        if self.birds_model.training:
+            self.birds_model.eval()
         y_pred, hidden = self.birds_model(x)
         return hidden
 

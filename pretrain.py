@@ -4,8 +4,7 @@ warnings.filterwarnings('ignore')
 import hydra
 
 # pretrain_original
-# pretrain_original_disc
-@hydra.main(config_path='conf', config_name='ceva')
+@hydra.main(config_path='conf', config_name='traffic')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -20,6 +19,9 @@ def run(config):
 
     # Saving checkpoints and logging with wandb.
     flat_config = flatten_dict.flatten(config, reducer='dot')
+
+    config.exp.name = f'{config.exp.name}_budget={config.model_params.additive_budget}' #parametrized experiment name ############################################################## !!!
+
     save_dir = os.path.join(config.exp.base_dir, config.exp.name)
 
 
@@ -33,7 +35,7 @@ def run(config):
         config.dataset.num_workers = 0
         logger = pl.loggers.TensorBoardLogger(save_dir="tensorboard", name=config.exp.name)
     else:
-        logger = pl.loggers.WandbLogger(entity="ofirbartal100", project='ceva-vm', name=config.exp.name)
+        logger = pl.loggers.WandbLogger(entity="ofirbartal100", project='omaal', name=config.exp.name )
     logger.log_hyperparams(flat_config)
     callbacks = [pl.callbacks.ModelCheckpoint(dirpath=save_dir,
                                               every_n_train_steps=config.trainer.get("model_checkpoint_freq", 20000),

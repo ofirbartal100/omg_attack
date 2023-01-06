@@ -14,6 +14,7 @@ class TrafficModel(BaseModel):
         self.traffic_model.load_state_dict(torch.load(traffic_model_path))
         for p in self.traffic_model.parameters():
             p.requires_grad = False
+        self.traffic_model.eval()
 
 
     def embed(self, inputs: Sequence[torch.Tensor]):
@@ -21,5 +22,8 @@ class TrafficModel(BaseModel):
         return x
 
     def encode(self, x: torch.Tensor, **kwargs):
+        if self.traffic_model.training:
+            self.traffic_model.eval()
+            
         return self.traffic_model(x)
 

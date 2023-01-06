@@ -7,7 +7,7 @@ algorithm: traffic_viewmaker
 system: TrafficViewmakerSystem
 
 # for sweep
-enc_every: 0
+enc_every: 1
 start_enc: 0
 embd_dim: 350
 
@@ -28,7 +28,7 @@ num_workers: null
 
 exp:
   base_dir: /workspace/dabs/exp/models
-  name: traffic_gan_budget_equalized
+  name: traffic_budget
 
 trainer:
   weights_summary: top
