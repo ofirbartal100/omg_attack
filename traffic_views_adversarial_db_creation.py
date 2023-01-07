@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore")
+
 import pytorch_lightning as pl
 from omegaconf import OmegaConf
 import torch
@@ -7,71 +10,116 @@ import os
 from torchvision.utils import save_image
 
 
-# config = OmegaConf.load('/workspace/dabs/conf/traffic.yaml')
-config = OmegaConf.load('/workspace/dabs/conf/ceva.yaml')
-config.debug = True
-# config.dataset = OmegaConf.load('/workspace/dabs/conf/dataset/traffic_sign_small.yaml')
-config.dataset = OmegaConf.load('/workspace/dabs/conf/dataset/lfw112.yaml')
-# config.model = OmegaConf.load('/workspace/dabs/conf/model/traffic_model.yaml')
-config.model = OmegaConf.load('/workspace/dabs/conf/model/jit_model.yaml')
+# config = OmegaConf.load('/workspace/dabs/conf/ceva.yaml')
+# config.dataset = OmegaConf.load('/workspace/dabs/conf/dataset/lfw112.yaml')
+# config.model = OmegaConf.load('/workspace/dabs/conf/model/jit_model.yaml')
+# system = viewmaker_original.CevaViewmakerSystem(config)
 
-config.dataset.batch_size = 32
-
-pl.seed_everything(config.trainer.seed)
-
-print('loading VM...')
-# system = viewmaker_original.TrafficViewMaker(config)
-system = viewmaker_original.CevaViewmakerSystem(config)
-system.setup('')
-# system.load_state_dict(torch.load('/workspace/dabs/exp/models/traffic_gan/presentation.ckpt')['state_dict'],strict=False)
-system.load_state_dict(torch.load('/workspace/dabs/exp/models/lfw_for_dataset_generation_b=0.015/epoch=80-step=90000.ckpt')['state_dict'],strict=False)
-
-system.eval()
-print('loading loader...')
-# loader = system.val_dataloader()
-loader = system.train_dataloader()
-i=0
-correct_src = 0
-correct_views = 0
-total_imgs = 0
+dataset ='traffic'
+part = 'val'
 num_views = 5
-# root = '/workspace/dabs/data/natural_images/ceva_lfw_gen/15_11_2022/val'
-root = '/workspace/dabs/data/natural_images/ceva_lfw_gen/15_11_2022/train'
-label_counters ={}
 
-def calc_views(img,orig_embeds):
-    views1, unnormalized_view1 = system.view(img, True)
-    unnormalized_view1 = torch.clamp(unnormalized_view1, 0, 1.0)
-    views_embeds = system.model.forward([system.normalize(unnormalized_view1)])
-    similarities = (orig_embeds * views_embeds).sum(1)/(orig_embeds.norm(dim=1)*views_embeds.norm(dim=1))
-    return unnormalized_view1 , similarities
+if dataset == 'traffic':
+    conf_yaml = '/workspace/dabs/conf/traffic.yaml'
+    conf_dataset_yaml = '/workspace/dabs/conf/dataset/traffic_sign_small.yaml'
+    conf_model_yaml = '/workspace/dabs/conf/model/traffic_model.yaml'
+    ckpt = '/workspace/dabs/exp/models/traffic_budget_budget=0.001/model.ckpt'
+    systemClass = viewmaker_original.TrafficViewMaker
+    batch_size = 32
     
+    root = '/workspace/dabs/data/adv_data/traffic_sign/07_01_2023/'+part
 
+    label_counters ={}
 
-for index , img , labels in tqdm(loader):
-    # correct_src += (system.model.traffic_model.forward_original(system.normalize(img)).max(1, keepdim=True)[1].flatten() == labels).sum()
-    orig_embeds = system.model.forward([system.normalize(img)])
-    views_similarities = [ calc_views(img,orig_embeds) for jj in range(num_views)]
-    for i in range(len(img)):
-        class_i = labels[i].item()
-        path = os.path.join(root, f'{class_i}')
+    def save_func(original,views_similarities,label):
+        path = os.path.join(root, f'{label:05d}')
         if not os.path.exists(path):
             os.makedirs(path)
 
-        if class_i in label_counters:
-            label_counters[class_i] += 1
+        if label in label_counters:
+            label_counters[label] += 1
         else:
-            label_counters[class_i] = 1
-        save_image(img[i],f'{path}/{class_i}_{label_counters[class_i]:04d}_original.jpg')
+            label_counters[label] = 0
 
-        for jj in range(num_views):
-            similarity = views_similarities[jj][1][i].item()
-            view = views_similarities[jj][0][i]
-            save_image(view,f'{path}/{class_i}_{label_counters[class_i]:04d}_view_{jj}_{similarity:.3f}.jpg')
+        save_image(original,f'{path}/{label_counters[label]:05d}_original.jpg')
+
+        for j in range(len(views_similarities)):
+            unnormalized_view, similarity = views_similarities[j]
+            save_image(unnormalized_view,f'{path}/{label_counters[label]:05d}_view_{j+1}_sim_{similarity:.3f}.jpg')
+
+elif dataset == 'lfw':
+    conf_yaml = '/workspace/dabs/conf/traffic.yaml'
+    conf_dataset_yaml = '/workspace/dabs/conf/dataset/traffic_sign_small.yaml'
+    conf_model_yaml = '/workspace/dabs/conf/model/traffic_model.yaml'
+    ckpt = '/workspace/dabs/exp/models/traffic_gan/presentation.ckpt'
+    systemClass = viewmaker_original.TrafficViewMaker
+    batch_size = 32
+    
+    root = '/workspace/dabs/data/natural_images/traffic_gen/06_01_2023/train'
+
+    label_counters ={}
+
+
+    def save_func(original,views_similarities,label):
+        path = os.path.join(root, f'{label}')
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        if label in label_counters:
+            label_counters[label] += 1
+        else:
+            label_counters[label] = 1
+        save_image(original,f'{path}/{label}_{label_counters[label]:04d}_original.jpg')
+
+        for j in range(len(views_similarities)):
+            unnormalized_view, similarity = views_similarities[j]
+            save_image(unnormalized_view,f'{path}/{label}_{label_counters[label]:04d}_view_{j}_{similarity:.3f}.jpg')
+
+
+print('loading config...')
+config = OmegaConf.load(conf_yaml)
+config.dataset = OmegaConf.load(conf_dataset_yaml)
+config.model = OmegaConf.load(conf_model_yaml)
+config.dataset.batch_size = batch_size
+config.debug = True
+pl.seed_everything(config.trainer.seed)
+
+print('loading VM...')
+if 'model.ckpt' in ckpt:
+    system = torch.load(ckpt)
+else:
+    system = systemClass(config)
+    system.setup('')
+    system.load_state_dict(torch.load(ckpt)['state_dict'],strict=False)
+
+system.cuda()
+system.eval()
+
+
+print('loading loader...')
+if part == 'train':
+    loader = system.train_dataloader()
+else :
+    loader = system.val_dataloader()
+
+
+
+def calc_views(img,orig_embeds):
+    views1, unnormalized_view1 = system.view(img.unsqueeze(0), True)
+    unnormalized_view1 = torch.clamp(unnormalized_view1, 0, 1.0).squeeze()
+    views_embeds = system.model.forward([system.normalize(unnormalized_view1)]).squeeze()
+    similarities = (orig_embeds * views_embeds).sum()/(orig_embeds.norm()*views_embeds.norm())
+    return unnormalized_view1 , similarities
+    
+
+for index , img , labels in tqdm(loader):
+    img = img.cuda()
+    orig_embeds = system.model.forward([system.normalize(img)])
+    for i in range(len(img)):
+        views_similarities = [ calc_views(img[i],orig_embeds[i]) for jj in range(num_views)]
+        class_i = labels[i].item()
+        
+        original = img[i].cpu()
+        views_similarities = [ (v.cpu(),s.cpu()) for v,s in views_similarities]
+        save_func(original,views_similarities,class_i)
             
-
-
-# print((correct_src+0.0)/total_imgs ,(correct_views+0.0)/total_imgs ,total_imgs )
-
-
-
