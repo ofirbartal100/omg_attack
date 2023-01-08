@@ -4,7 +4,7 @@ warnings.filterwarnings('ignore')
 import hydra
 
 # pretrain_original
-@hydra.main(config_path='conf', config_name='traffic')
+@hydra.main(config_path='conf', config_name='ceva')
 def run(config):
     # Deferred imports for faster tab completion
     import os

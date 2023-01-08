@@ -18,7 +18,7 @@ embd_dim: 2048
 enc_every: 1
 exp:
   base_dir: /workspace/dabs/exp/models
-  name: birds_dyn_resotre
+  name: birds_dyn_sweep
 gen_every: 2
 gpus: [0]
 

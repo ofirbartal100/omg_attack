@@ -23,27 +23,32 @@ class Subset_Index(Subset):
         return idx,  img, label
 
 
-def get_model(config: DictConfig, dataset_class: Dataset, **kwargs):
+def get_model(config: DictConfig, **kwargs):
     '''Retrieves the specified model class, given the dataset class.'''
-    spec = dataset_class.spec()
     if config.model.name == 'transformer':
         model_class = transformer.DomainAgnosticTransformer
+        dataset_class = None
     elif "resnet" in config.model.name:
         model_class = resnet.ResNetDabs
+        dataset_class = None
     elif "jit" in config.model.name:
         model_class = jit_model.JitModel
+        dataset_class = lfw.LFW112 
     elif "traffic" in config.model.name:
         model_class = traffic_model.TrafficModel
+        dataset_class = traffic_sign.TrafficSignSmall 
     elif "birds" in config.model.name:
         model_class = birds_model.BirdsModel
+        dataset_class = cu_birds.CUBirds
     else:
         raise ValueError(f'Encoder {config.model.name} doesn\'t exist.')
     # Retrieve the dataset-specific params.
     kwargs.update(config.model.kwargs)
+    spec = dataset_class.spec()
     encoder_model = model_class(
         input_specs=spec,
         **kwargs, )
-    return encoder_model
+    return encoder_model , dataset_class
 
 
 class BaseSystem(pl.LightningModule):
@@ -56,11 +61,7 @@ class BaseSystem(pl.LightningModule):
         '''
         super().__init__()
         self.config = config
-        # self.dataset = lfw.LFW112 #DATASET_DICT[config.dataset.name]
-        self.dataset = traffic_sign.TrafficSignSmall #DATASET_DICT[config.dataset.name]
-        # self.dataset = cu_birds.CUBirdsSmall #DATASET_DICT[config.dataset.name]
-        # self.dataset = cu_birds.CUBirds #DATASET_DICT[config.dataset.name]
-        self.model = get_model(config, self.dataset)
+        self.model, self.dataset = get_model(config)
         self.low_data = config.dataset.get("low_data", 1.0)
 
     @abstractmethod

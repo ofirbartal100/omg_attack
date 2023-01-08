@@ -17,22 +17,22 @@ from torchvision.utils import save_image
 
 dataset ='traffic'
 part = 'val'
-num_views = 5
+num_views = 2
 
 if dataset == 'traffic':
     conf_yaml = '/workspace/dabs/conf/traffic.yaml'
     conf_dataset_yaml = '/workspace/dabs/conf/dataset/traffic_sign_small.yaml'
     conf_model_yaml = '/workspace/dabs/conf/model/traffic_model.yaml'
-    ckpt = '/workspace/dabs/exp/models/traffic_budget_budget=0.001/model.ckpt'
+    ckpt = '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt'
     systemClass = viewmaker_original.TrafficViewMaker
     batch_size = 32
     
-    root = '/workspace/dabs/data/adv_data/traffic_sign/07_01_2023/'+part
+    root = '/workspace/dabs/data/adv_data/traffic_sign/07_01_2023/traffic_budget_budget=0.005/'+part
 
     label_counters ={}
 
-    def save_func(original,views_similarities,label):
-        path = os.path.join(root, f'{label:05d}')
+    def save_func(original,views_similarities,label, class_names):
+        path = os.path.join(root, class_names[label])
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -48,32 +48,60 @@ if dataset == 'traffic':
             save_image(unnormalized_view,f'{path}/{label_counters[label]:05d}_view_{j+1}_sim_{similarity:.3f}.jpg')
 
 elif dataset == 'lfw':
-    conf_yaml = '/workspace/dabs/conf/traffic.yaml'
-    conf_dataset_yaml = '/workspace/dabs/conf/dataset/traffic_sign_small.yaml'
-    conf_model_yaml = '/workspace/dabs/conf/model/traffic_model.yaml'
-    ckpt = '/workspace/dabs/exp/models/traffic_gan/presentation.ckpt'
-    systemClass = viewmaker_original.TrafficViewMaker
+    conf_yaml = '/workspace/dabs/conf/ceva.yaml'
+    conf_dataset_yaml = '/workspace/dabs/conf/dataset/lfw_112.yaml'
+    conf_model_yaml = '/workspace/dabs/conf/model/ceva_model.yaml'
+    ckpt = '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt'
+    systemClass = viewmaker_original.CevaViewmakerSystem
     batch_size = 32
     
-    root = '/workspace/dabs/data/natural_images/traffic_gen/06_01_2023/train'
+    root = '/workspace/dabs/data/adv_data/lfw/date/experiment_name/'+part
 
     label_counters ={}
 
-
-    def save_func(original,views_similarities,label):
-        path = os.path.join(root, f'{label}')
+    def save_func(original,views_similarities,label, class_names):
+        path = os.path.join(root, class_names[label])
         if not os.path.exists(path):
             os.makedirs(path)
 
         if label in label_counters:
             label_counters[label] += 1
         else:
-            label_counters[label] = 1
-        save_image(original,f'{path}/{label}_{label_counters[label]:04d}_original.jpg')
+            label_counters[label] = 0
+
+        save_image(original,f'{path}/{label_counters[label]:04d}_original.jpg')
 
         for j in range(len(views_similarities)):
             unnormalized_view, similarity = views_similarities[j]
-            save_image(unnormalized_view,f'{path}/{label}_{label_counters[label]:04d}_view_{j}_{similarity:.3f}.jpg')
+            save_image(unnormalized_view,f'{path}/{label_counters[label]:04d}_view_{j+1}_sim_{similarity:.3f}.jpg')
+
+elif dataset == 'birds':
+    conf_yaml = '/workspace/dabs/conf/birds.yaml'
+    conf_dataset_yaml = '/workspace/dabs/conf/dataset/cu_birds_small.yaml'
+    conf_model_yaml = '/workspace/dabs/conf/model/birds_model.yaml'
+    ckpt = '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt'
+    systemClass = viewmaker_original.BirdsViewMaker
+    batch_size = 32
+    
+    root = '/workspace/dabs/data/adv_data/cu_birds/date/experiment_name/'+part
+
+    label_counters ={}
+
+    def save_func(original,views_similarities,label, class_names):
+        path = os.path.join(root, class_names[label])
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        if label in label_counters:
+            label_counters[label] += 1
+        else:
+            label_counters[label] = 0
+
+        save_image(original,f'{path}/{label_counters[label]:04d}_original.jpg')
+
+        for j in range(len(views_similarities)):
+            unnormalized_view, similarity = views_similarities[j]
+            save_image(unnormalized_view,f'{path}/{label_counters[label]:04d}_view_{j+1}_sim_{similarity:.3f}.jpg')
 
 
 print('loading config...')
@@ -102,6 +130,7 @@ if part == 'train':
 else :
     loader = system.val_dataloader()
 
+class_names = list(loader.dataset.class_to_index.keys()) # map between label index and class name
 
 
 def calc_views(img,orig_embeds):
@@ -121,5 +150,5 @@ for index , img , labels in tqdm(loader):
         
         original = img[i].cpu()
         views_similarities = [ (v.cpu(),s.cpu()) for v,s in views_similarities]
-        save_func(original,views_similarities,class_i)
+        save_func(original,views_similarities,class_i,class_names)
             
