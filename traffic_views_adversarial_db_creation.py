@@ -15,9 +15,9 @@ from torchvision.utils import save_image
 # config.model = OmegaConf.load('/workspace/dabs/conf/model/jit_model.yaml')
 # system = viewmaker_original.CevaViewmakerSystem(config)
 
-dataset ='traffic'
-part = 'val'
-num_views = 2
+dataset ='birds'
+part = 'train'
+num_views = 4
 
 if dataset == 'traffic':
     conf_yaml = '/workspace/dabs/conf/traffic.yaml'
@@ -79,11 +79,11 @@ elif dataset == 'birds':
     conf_yaml = '/workspace/dabs/conf/birds.yaml'
     conf_dataset_yaml = '/workspace/dabs/conf/dataset/cu_birds_small.yaml'
     conf_model_yaml = '/workspace/dabs/conf/model/birds_model.yaml'
-    ckpt = '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt'
+    ckpt = '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt'
     systemClass = viewmaker_original.BirdsViewMaker
-    batch_size = 32
+    batch_size = 24
     
-    root = '/workspace/dabs/data/adv_data/cu_birds/date/experiment_name/'+part
+    root = '/workspace/dabs/data/adv_data/cu_birds/10_01_2023/birds_dyn_sweep_budget=0.025/'+part
 
     label_counters ={}
 
@@ -130,7 +130,12 @@ if part == 'train':
 else :
     loader = system.val_dataloader()
 
-class_names = list(loader.dataset.class_to_index.keys()) # map between label index and class name
+if dataset =='birds':
+    with open('/workspace/dabs/data/natural_images/cu_birds/CUB_200_2011/classes.txt', 'r') as f:
+        image_info = [line.split('\n')[0].split(' ', 1) for line in f.readlines()]
+    class_names = {(int(a[0])-1):a[1] for a in image_info}
+else:
+    class_names = list(loader.dataset.class_to_index.keys()) # map between label index and class name
 
 
 def calc_views(img,orig_embeds):
