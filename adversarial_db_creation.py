@@ -9,15 +9,20 @@ from tqdm import tqdm
 import os 
 from torchvision.utils import save_image
 
+import torchattacks as ta
 
 # config = OmegaConf.load('/workspace/dabs/conf/ceva.yaml')
 # config.dataset = OmegaConf.load('/workspace/dabs/conf/dataset/lfw112.yaml')
 # config.model = OmegaConf.load('/workspace/dabs/conf/model/jit_model.yaml')
 # system = viewmaker_original.CevaViewmakerSystem(config)
 
-dataset ='lfw'
-part = 'train'
-num_views = 4
+dataset ='birds'
+part = 'val'
+num_views = 1
+attack = 'FGSM'
+
+
+
 
 if dataset == 'traffic':
     conf_yaml = '/workspace/dabs/conf/traffic.yaml'
@@ -49,13 +54,13 @@ if dataset == 'traffic':
 
 elif dataset == 'lfw':
     conf_yaml = '/workspace/dabs/conf/ceva.yaml'
-    conf_dataset_yaml = '/workspace/dabs/conf/dataset/lfw112.yaml'
-    conf_model_yaml = '/workspace/dabs/conf/model/jit_model.yaml'
-    ckpt = '/workspace/dabs/exp/models/lfw_budget_budget=0.025/model.ckpt'
+    conf_dataset_yaml = '/workspace/dabs/conf/dataset/lfw_112.yaml'
+    conf_model_yaml = '/workspace/dabs/conf/model/ceva_model.yaml'
+    ckpt = '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt'
     systemClass = viewmaker_original.CevaViewmakerSystem
     batch_size = 32
     
-    root = '/workspace/dabs/data/adv_data/lfw/13_01_2023/lfw_budget_budget=0.025/'+part
+    root = '/workspace/dabs/data/adv_data/lfw/date/experiment_name/'+part
 
     label_counters ={}
 
@@ -81,9 +86,9 @@ elif dataset == 'birds':
     conf_model_yaml = '/workspace/dabs/conf/model/birds_model.yaml'
     ckpt = '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt'
     systemClass = viewmaker_original.BirdsViewMaker
-    batch_size = 24
+    batch_size = 12
     
-    root = '/workspace/dabs/data/adv_data/cu_birds/10_01_2023/birds_dyn_sweep_budget=0.025/'+part
+    root = '/workspace/dabs/data/adv_data/cu_birds/FGSM/'+part
 
     label_counters ={}
 
@@ -100,8 +105,8 @@ elif dataset == 'birds':
         save_image(original,f'{path}/{label_counters[label]:04d}_original.jpg')
 
         for j in range(len(views_similarities)):
-            unnormalized_view, similarity = views_similarities[j]
-            save_image(unnormalized_view,f'{path}/{label_counters[label]:04d}_view_{j+1}_sim_{similarity:.3f}.jpg')
+            unnormalized_view = views_similarities[j]
+            save_image(unnormalized_view,f'{path}/{label_counters[label]:04d}_view_{j+1}.jpg')
 
 
 print('loading config...')
@@ -134,28 +139,46 @@ if dataset =='birds':
     with open('/workspace/dabs/data/natural_images/cu_birds/CUB_200_2011/classes.txt', 'r') as f:
         image_info = [line.split('\n')[0].split(' ', 1) for line in f.readlines()]
     class_names = {(int(a[0])-1):a[1] for a in image_info}
-elif dataset =='lfw':
-    class_names = list(loader.dataset.dataset.dataset.class_to_idx.keys()) # map between label index and class name
+
+
+    from types import MethodType
+    def new_forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        
+        x = self.avgpool(x)
+        h = x.view(x.shape[0], -1)
+        x = self.fc(h)
+        
+        return x
+
+    system.model.birds_model.forward = MethodType(new_forward, system.model.birds_model)
+
 else:
     class_names = list(loader.dataset.class_to_index.keys()) # map between label index and class name
 
 
-def calc_views(img,orig_embeds):
-    views1, unnormalized_view1 = system.view(img.unsqueeze(0), True)
-    unnormalized_view1 = torch.clamp(unnormalized_view1, 0, 1.0).squeeze()
-    views_embeds = system.model.forward([system.normalize(unnormalized_view1)]).squeeze()
-    similarities = (orig_embeds * views_embeds).sum()/(orig_embeds.norm()*views_embeds.norm())
-    return unnormalized_view1 , similarities
+if attack == 'FGSM':
+    atk = ta.FGSM(system.model.birds_model , eps=0.025) #, alpha=2/255, steps=4)
+elif attack == 'PGD':
+    atk = ta.PGD(system.model.birds_model , eps=0.025, alpha=0.025/8, steps=10)
+
+atk.set_normalization_used(mean=loader.dataset.dataset.MEAN, std=loader.dataset.dataset.STD)
     
 
 for index , img , labels in tqdm(loader):
     img = img.cuda()
-    orig_embeds = system.model.forward([system.normalize(img)])
+    labels = labels.cuda()
     for i in range(len(img)):
-        views_similarities = [ calc_views(img[i],orig_embeds[i]) for jj in range(num_views)]
-        class_i = labels[i].item()
-        
+        adv_views = [ system.unnormalize(atk(system.normalize(img[i]),labels[i].unsqueeze(0))).cpu() for jj in range(num_views)]
+        class_i = labels[i].cpu().item()
         original = img[i].cpu()
-        views_similarities = [ (v.cpu(),s.cpu()) for v,s in views_similarities]
-        save_func(original,views_similarities,class_i,class_names)
+        save_func(original,adv_views,class_i,class_names)
             

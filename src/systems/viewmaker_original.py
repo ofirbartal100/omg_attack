@@ -429,7 +429,7 @@ from types import MethodType
 class CevaViewmakerSystem(OriginalViewmakerSystem):
 
     def setup(self, stage):
-        OriginalViewmakerSystem.setup(self,'no_face_mask')
+        OriginalViewmakerSystem.setup(self,'face_mask')
 
         self.disc = StyleGan2Disc(size=256,channel_multiplier=2)
         checkpoint = torch.load("/workspace/stylegan2_pytorch/checkpoint/550000.pt")
