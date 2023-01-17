@@ -10,8 +10,8 @@ from torch.utils.data import DataLoader, Dataset, IterableDataset, SubsetRandomS
 from dabs.src.datasets.utils import fraction_db
 
 #from dabs.src.datasets.catalog import DATASET_DICT
-from dabs.src.datasets.natural_images import lfw,traffic_sign, cu_birds
-from dabs.src.models import transformer, resnet , jit_model , traffic_model , birds_model
+from dabs.src.datasets.natural_images import lfw,traffic_sign, cu_birds,mnist
+from dabs.src.models import transformer, resnet , jit_model , traffic_model , birds_model , mnist_model
 #from dabs.src.models import resnet, jit_model
 from viewmaker.src.utils.utils import load_json, save_json
 from dotmap import DotMap
@@ -40,6 +40,9 @@ def get_model(config: DictConfig, **kwargs):
     elif "birds" in config.model.name:
         model_class = birds_model.BirdsModel
         dataset_class = cu_birds.CUBirds
+    elif "mnist_model" in config.model.name:
+        model_class = mnist_model.MnistModel
+        dataset_class = mnist.MNIST
     else:
         raise ValueError(f'Encoder {config.model.name} doesn\'t exist.')
     # Retrieve the dataset-specific params.

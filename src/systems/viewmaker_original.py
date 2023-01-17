@@ -429,7 +429,7 @@ from types import MethodType
 class CevaViewmakerSystem(OriginalViewmakerSystem):
 
     def setup(self, stage):
-        OriginalViewmakerSystem.setup(self,'face_mask')
+        OriginalViewmakerSystem.setup(self,'no_face_mask')
 
         self.disc = StyleGan2Disc(size=256,channel_multiplier=2)
         checkpoint = torch.load("/workspace/stylegan2_pytorch/checkpoint/550000.pt")
@@ -1055,3 +1055,160 @@ class BirdsViewMaker(TrafficViewMaker):
             self.config.gen_every = 2
         elif mean_encoder_acc<0.3:
             self.config.gen_every = 1
+
+
+
+
+class MNISTViewMaker(BirdsViewMaker):
+
+    def setup(self, stage):
+        OriginalViewmakerSystem.setup(self,stage)
+
+        self.disc = TinyP2PDiscriminator(in_channels=self.dataset.spec()[0].in_channels,
+                                         wgan=self.config.disc.wgan,
+                                         blocks_num=self.config.disc.conv_blocks)
+
+    
+    def objective(self, emb_dict):
+        view_maker_loss_weight = self.config.loss_params.view_maker_loss_weight
+        original_embds = self.model.forward([self.normalize(emb_dict["originals"])])
+
+        loss_function2 = AdversarialSimCLRLoss(
+            embs1=original_embds,
+            embs2=emb_dict['view2_embs'],
+            t=self.config.loss_params.t,
+            view_maker_loss_weight=view_maker_loss_weight
+        ).get_loss()
+
+        loss_function1 = AdversarialSimCLRLoss(
+            embs1=original_embds,
+            embs2=emb_dict['view1_embs'],
+            t=self.config.loss_params.t,
+            view_maker_loss_weight=view_maker_loss_weight
+        ).get_loss()
+
+        loss_function3 = AdversarialSimCLRLoss(
+            embs1=emb_dict['view1_embs'],
+            embs2=emb_dict['view2_embs'],
+            t=self.config.loss_params.t,
+            view_maker_loss_weight=view_maker_loss_weight
+        ).get_loss()
+
+        encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = ( (i+j+k) / 3 for i,j,k in zip(loss_function1,loss_function2,loss_function3))
+        # encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim = loss_function1
+        positive_similarity_of_views = loss_function3[3]
+        positive_sim = (loss_function1[3] + loss_function2[3])/2
+
+
+        o,_ = self.model.mnist_model(emb_dict["originals"])
+        o_prob = F.softmax(o, dim = -1)
+        o = o_prob.argmax(1, keepdim = True)
+
+        v1,_ = self.model.mnist_model(emb_dict["views1"])
+        v1_prob = F.softmax(v1, dim = -1)
+        v1 = v1_prob.argmax(1, keepdim = True)
+
+        v2,_ = self.model.mnist_model(emb_dict["views2"])
+        v2_prob = F.softmax(v2, dim = -1)
+        v2 = v2_prob.argmax(1, keepdim = True)
+
+        emb_dict['model_original_pred'] = o
+        emb_dict['model_view1_pred'] = v1
+        emb_dict['model_view2_pred'] = v2
+
+        encoder_acc = ((o==v1).sum() + (o==v2).sum())/(2*len(o))
+
+        emb_dict['model_acc_top1'] , emb_dict['model_acc_top5'] = BirdsViewMaker.calculate_topk_accuracy(o_prob,emb_dict['labels'])
+        emb_dict['view1_acc_top1'] , emb_dict['view1_acc_top5'] = BirdsViewMaker.calculate_topk_accuracy(v1_prob,emb_dict['labels'])
+        emb_dict['view2_acc_top1'] , emb_dict['view2_acc_top5'] = BirdsViewMaker.calculate_topk_accuracy(v2_prob,emb_dict['labels'])
+
+        return encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim , positive_similarity_of_views
+
+   
+
+    @staticmethod
+    def paint_border(image, is_similar, pad = 1):
+        # image[:,:pad] = 0
+        # image[:,-pad:] = 0
+        # image[:,:,:pad] = 0
+        # image[:,:,-pad:] = 0
+
+        if is_similar:
+            image[0,:pad] = 1
+            image[0,-pad:] = 1
+            image[0,:,:pad] = 1
+            image[0,:,-pad:] = 1
+        else :
+            image[0,:pad] = 0
+            image[0,-pad:] = 0
+            image[0,:,:pad] = 0
+            image[0,:,-pad:] = 0
+
+        return image
+
+    def wandb_logging(self, emb_dict):
+        with torch.no_grad():
+
+            # check optimizer index to log images only once
+            # # Handle Tensor (dp) and int (ddp) cases
+            optimizer_idx = self.get_optimizer_index(emb_dict)
+            if optimizer_idx > 0:
+                return
+
+            if self.global_step % self.logging_steps == 0:
+                img = emb_dict['originals'][:self.disp_amnt]/255.
+                unnormalized_view1 = emb_dict['unnormalized_view1'][:self.disp_amnt]
+                unnormalized_view2 = emb_dict['unnormalized_view2'][:self.disp_amnt]
+
+                diff_heatmap = heatmap_of_view_effect(img, unnormalized_view1)
+                diff_heatmap2 = heatmap_of_view_effect(img, unnormalized_view2)
+
+                confused_orig = (emb_dict['model_original_pred'].flatten() == emb_dict['labels'].flatten()).flatten()[:self.disp_amnt]
+                confused_v1 = (emb_dict['model_original_pred'] == emb_dict['model_view1_pred']).flatten()[:self.disp_amnt]
+                confused_v2 = (emb_dict['model_original_pred'] == emb_dict['model_view2_pred']).flatten()[:self.disp_amnt]
+
+                img_border = torch.cat([ MNISTViewMaker.paint_border(img[c],confused_orig[c],pad=2).unsqueeze(0)  for c in range(self.disp_amnt)],dim=0)
+                unnormalized_view1_border = torch.cat([ MNISTViewMaker.paint_border(unnormalized_view1[c],confused_v1[c],pad=2).unsqueeze(0)  for c in range(self.disp_amnt)],dim=0)
+                unnormalized_view2_border = torch.cat([ MNISTViewMaker.paint_border(unnormalized_view2[c],confused_v2[c],pad=2).unsqueeze(0)  for c in range(self.disp_amnt)],dim=0)
+
+
+                cat = torch.cat(
+                    [   img_border, #img,
+                        # unnormalized_view1,
+                        # unnormalized_view2,
+                        unnormalized_view1_border,
+                        unnormalized_view2_border,
+                        diff_heatmap,
+                        diff_heatmap2,
+                        (diff_heatmap - diff_heatmap2).abs()])
+
+                if cat.shape[1] > 3:
+                    cat = cat.mean(1).unsqueeze(1)
+
+                grid = make_grid(cat, nrow=self.disp_amnt)
+                grid = resize(torch.clamp(grid, 0, 1.0), (6*150, 10*150), Image.NEAREST)
+
+
+                if isinstance(self.logger, WandbLogger):
+                    wandb.log({
+                        "original_vs_views": wandb.Image(grid, caption=f"Epoch: {self.current_epoch}, Step {self.global_step}"),
+                        "model_acc_top1": emb_dict['model_acc_top1'],
+                        "model_acc_top5": emb_dict['model_acc_top5'],
+                        "view_acc_top1": (emb_dict['view1_acc_top1']+emb_dict['view2_acc_top1'])/2,
+                        "view_acc_top5": (emb_dict['view1_acc_top5']+emb_dict['view2_acc_top5'])/2,
+                        "gen_every":self.config.gen_every
+                    })
+                else:
+                    self.logger.experiment.add_image('original_vs_views', grid, self.global_step)
+                    self.logger.experiment.add_scalar("model_acc_top1", emb_dict['model_acc_top1'], self.global_step)
+                    self.logger.experiment.add_scalar("model_acc_top5", emb_dict['model_acc_top5'], self.global_step)
+                    self.logger.experiment.add_scalar("view_acc_top1", (emb_dict['view1_acc_top1']+emb_dict['view2_acc_top1'])/2, self.global_step)
+                    self.logger.experiment.add_scalar("view_acc_top5", (emb_dict['view1_acc_top5']+emb_dict['view2_acc_top5'])/2, self.global_step)
+
+    
+    def training_epoch_end(self, outputs) -> None:
+        mean_encoder_acc = np.mean(list(chain(*[ [oo['encoder_acc'].item() for oo in o] for o in outputs])))
+        # if mean_encoder_acc>0.6:
+        #     self.config.gen_every = 2
+        # elif mean_encoder_acc<0.3:
+        #     self.config.gen_every = 1

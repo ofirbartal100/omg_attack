@@ -8,6 +8,7 @@ from dabs.src.systems import viewmaker_original
 from tqdm import tqdm
 import os 
 from torchvision.utils import save_image
+import torch.nn.functional as F
 
 import torchattacks as ta
 
@@ -16,8 +17,8 @@ import torchattacks as ta
 # config.model = OmegaConf.load('/workspace/dabs/conf/model/jit_model.yaml')
 # system = viewmaker_original.CevaViewmakerSystem(config)
 
-dataset ='birds'
-part = 'val'
+dataset ='traffic'
+part = 'train'
 num_views = 1
 attack = 'FGSM'
 
@@ -32,7 +33,7 @@ if dataset == 'traffic':
     systemClass = viewmaker_original.TrafficViewMaker
     batch_size = 32
     
-    root = '/workspace/dabs/data/adv_data/traffic_sign/07_01_2023/traffic_budget_budget=0.005/'+part
+    root = '/workspace/dabs/data/adv_data/traffic_sign/FGSM/'+part
 
     label_counters ={}
 
@@ -49,8 +50,8 @@ if dataset == 'traffic':
         save_image(original,f'{path}/{label_counters[label]:05d}_original.jpg')
 
         for j in range(len(views_similarities)):
-            unnormalized_view, similarity = views_similarities[j]
-            save_image(unnormalized_view,f'{path}/{label_counters[label]:05d}_view_{j+1}_sim_{similarity:.3f}.jpg')
+            unnormalized_view = views_similarities[j]
+            save_image(unnormalized_view,f'{path}/{label_counters[label]:05d}_view_{j+1}.jpg')
 
 elif dataset == 'lfw':
     conf_yaml = '/workspace/dabs/conf/ceva.yaml'
@@ -160,15 +161,40 @@ if dataset =='birds':
         return x
 
     system.model.birds_model.forward = MethodType(new_forward, system.model.birds_model)
+    threat_model  = system.model.birds_model
+
+elif dataset =='traffic':
+    class_names = [str(i) for i in range(43)] # map between label index and class name
+   
+    from types import MethodType
+    def forward_original(self, x):
+        # transform the input
+        x = self.stn(x)
+
+        # Perform forward pass
+        x = self.bn1(F.max_pool2d(F.leaky_relu(self.conv1(x)),2))
+        x = self.conv_drop(x)
+        x = self.bn2(F.max_pool2d(F.leaky_relu(self.conv2(x)),2))
+        x = self.conv_drop(x)
+        x = self.bn3(F.max_pool2d(F.leaky_relu(self.conv3(x)),2))
+        x = self.conv_drop(x)
+        x = x.view(-1, 250*2*2)
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return F.log_softmax(x, dim=1)
+
+    system.model.traffic_model.forward = MethodType(forward_original, system.model.traffic_model)
+    threat_model  = system.model.traffic_model
 
 else:
     class_names = list(loader.dataset.class_to_index.keys()) # map between label index and class name
 
 
 if attack == 'FGSM':
-    atk = ta.FGSM(system.model.birds_model , eps=0.025) #, alpha=2/255, steps=4)
+    atk = ta.FGSM(threat_model, eps=0.005) #, alpha=2/255, steps=4)
 elif attack == 'PGD':
-    atk = ta.PGD(system.model.birds_model , eps=0.025, alpha=0.025/8, steps=10)
+    atk = ta.PGD(threat_model, eps=0.025, alpha=0.025/8, steps=10)
 
 atk.set_normalization_used(mean=loader.dataset.dataset.MEAN, std=loader.dataset.dataset.STD)
     

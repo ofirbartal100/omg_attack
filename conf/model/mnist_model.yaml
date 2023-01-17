@@ -1,0 +1,3 @@
+name: mnist_model
+kwargs:
+  mnist_model_path: '/workspace/MNIST/mnist_cnn.pt'

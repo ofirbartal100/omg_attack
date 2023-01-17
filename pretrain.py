@@ -2,9 +2,11 @@
 import warnings
 warnings.filterwarnings('ignore')
 import hydra
+from datetime import datetime
+
 
 # pretrain_original
-@hydra.main(config_path='conf', config_name='ceva')
+@hydra.main(config_path='conf', config_name='mnist')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -20,7 +22,12 @@ def run(config):
     # Saving checkpoints and logging with wandb.
     flat_config = flatten_dict.flatten(config, reducer='dot')
 
-    config.exp.name = f'{config.exp.name}_budget={config.model_params.additive_budget}' #parametrized experiment name ############################################################## !!!
+    # get the current timestamp
+    current_timestamp = datetime.now()
+    # format the timestamp as a string in the desired format
+    timestamp_string = current_timestamp.strftime("%Y-%m-%d_%H:%M:%S")
+
+    config.exp.name = f'{config.exp.name}_{timestamp_string}' #parametrized experiment name ############################################################## !!!
 
     save_dir = os.path.join(config.exp.base_dir, config.exp.name)
 
@@ -65,6 +72,8 @@ def run(config):
         system = viewmaker_original.TrafficViewMaker(config)
     elif config.algorithm == 'birds_viewmaker':
         system = viewmaker_original.BirdsViewMaker(config)
+    elif config.algorithm == 'mnist_viewmaker':
+        system = viewmaker_original.MNISTViewMaker(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 

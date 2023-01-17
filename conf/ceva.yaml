@@ -40,7 +40,7 @@ trainer:
   max_steps: 120_001
   gradient_clip_val: 0
   distributed_backend: dp
-  model_checkpoint_freq: 20_000
+  model_checkpoint_freq: 40_000
 
 optim:
   name: sgd
