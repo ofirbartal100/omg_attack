@@ -37,7 +37,7 @@ class MNIST(Dataset):
         img, label = self.dataset.data[index], int(self.dataset.targets[index])
         # img = Image.fromarray(img)
         # img = self.transforms(img)
-        return index, img.float().unsqueeze(0), label
+        return index, img.float().unsqueeze(0)/255.0, label
 
     def __len__(self):
         return len(self.dataset)

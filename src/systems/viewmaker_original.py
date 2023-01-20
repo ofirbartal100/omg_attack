@@ -1156,7 +1156,7 @@ class MNISTViewMaker(BirdsViewMaker):
                 return
 
             if self.global_step % self.logging_steps == 0:
-                img = emb_dict['originals'][:self.disp_amnt]/255.
+                img = emb_dict['originals'][:self.disp_amnt]
                 unnormalized_view1 = emb_dict['unnormalized_view1'][:self.disp_amnt]
                 unnormalized_view2 = emb_dict['unnormalized_view2'][:self.disp_amnt]
 
