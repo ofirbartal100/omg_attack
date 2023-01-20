@@ -1,0 +1,4 @@
+name: cifar_model
+kwargs:
+  cifar_model_path: '/workspace/pytorch_image_classification_repo/experiments/cifar10/vgg/exp00/checkpoint_00160.pth'
+  vgg_config_path: '/workspace/pytorch_image_classification_repo/experiments/cifar10/vgg/exp00/config.yaml'

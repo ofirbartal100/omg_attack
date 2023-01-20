@@ -6,7 +6,8 @@ from datetime import datetime
 
 
 # pretrain_original
-@hydra.main(config_path='conf', config_name='mnist')
+# @hydra.main(config_path='conf', config_name='mnist')
+@hydra.main(config_path='conf', config_name='cifar')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -74,6 +75,8 @@ def run(config):
         system = viewmaker_original.BirdsViewMaker(config)
     elif config.algorithm == 'mnist_viewmaker':
         system = viewmaker_original.MNISTViewMaker(config)
+    elif config.algorithm == 'cifar_viewmaker':
+        system = viewmaker_original.CIFARViewMaker(config)
     else:
         raise ValueError(f'Unimplemented algorithm config.algorithm={config.algorithm}.')
 

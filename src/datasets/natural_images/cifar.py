@@ -16,6 +16,7 @@ class CIFAR10(Dataset):
     IN_CHANNELS = 3
     MEAN = [0.4914, 0.4822, 0.4465]
     STD = [0.1953, 0.1925, 0.1942]
+    
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
@@ -73,6 +74,8 @@ class CIFAR10Small(CIFAR10):
     INPUT_SIZE = (32, 32)
     PATCH_SIZE = (4, 4)
 
+    MEAN =[0.4914, 0.4822, 0.4465]
+    STD = [0.2470, 0.2435, 0.2616]
 
     @staticmethod
     def spec():

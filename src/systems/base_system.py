@@ -10,8 +10,8 @@ from torch.utils.data import DataLoader, Dataset, IterableDataset, SubsetRandomS
 from dabs.src.datasets.utils import fraction_db
 
 #from dabs.src.datasets.catalog import DATASET_DICT
-from dabs.src.datasets.natural_images import lfw,traffic_sign, cu_birds,mnist
-from dabs.src.models import transformer, resnet , jit_model , traffic_model , birds_model , mnist_model
+from dabs.src.datasets.natural_images import lfw,traffic_sign, cu_birds,mnist , cifar
+from dabs.src.models import transformer, resnet , jit_model , traffic_model , birds_model , mnist_model , cifar_model
 #from dabs.src.models import resnet, jit_model
 from viewmaker.src.utils.utils import load_json, save_json
 from dotmap import DotMap
@@ -43,6 +43,9 @@ def get_model(config: DictConfig, **kwargs):
     elif "mnist_model" in config.model.name:
         model_class = mnist_model.MnistModel
         dataset_class = mnist.MNIST
+    elif "cifar_model" in config.model.name:
+        model_class = cifar_model.CifarModel
+        dataset_class = cifar.CIFAR10Small
     else:
         raise ValueError(f'Encoder {config.model.name} doesn\'t exist.')
     # Retrieve the dataset-specific params.

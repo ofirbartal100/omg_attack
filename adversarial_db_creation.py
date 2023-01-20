@@ -18,7 +18,7 @@ import torchattacks as ta
 # system = viewmaker_original.CevaViewmakerSystem(config)
 
 dataset ='traffic'
-part = 'train'
+part = 'val'
 num_views = 1
 attack = 'FGSM'
 
@@ -33,7 +33,7 @@ if dataset == 'traffic':
     systemClass = viewmaker_original.TrafficViewMaker
     batch_size = 32
     
-    root = '/workspace/dabs/data/adv_data/traffic_sign/FGSM/'+part
+    root = '/workspace/dabs/data/adv_data/traffic_sign/FGSM/no_aug/'+part
 
     label_counters ={}
 
@@ -186,6 +186,14 @@ elif dataset =='traffic':
 
     system.model.traffic_model.forward = MethodType(forward_original, system.model.traffic_model)
     threat_model  = system.model.traffic_model
+    state_dict = torch.load('/workspace/gtsrb_pytorch/model_no_aug.pth')
+    threat_model.load_state_dict(state_dict)
+    threat_model.eval()
+
+    from torchvision import datasets, transforms
+    from gtsrb_pytorch.data import *
+    loader = val_loader = torch.utils.data.DataLoader(datasets.ImageFolder('/workspace/gtsrb_pytorch/data/val_images',transform=data_transforms), batch_size=32, shuffle=False, num_workers=4, pin_memory=True)
+    MEAN,STD = np.array([0.3337, 0.3064, 0.3171],dtype=np.float32), np.array([ 0.2672, 0.2564, 0.2629],dtype=np.float32)
 
 else:
     class_names = list(loader.dataset.class_to_index.keys()) # map between label index and class name
@@ -196,15 +204,17 @@ if attack == 'FGSM':
 elif attack == 'PGD':
     atk = ta.PGD(threat_model, eps=0.025, alpha=0.025/8, steps=10)
 
-atk.set_normalization_used(mean=loader.dataset.dataset.MEAN, std=loader.dataset.dataset.STD)
-    
+atk.set_normalization_used(mean=MEAN, std=STD)
+# atk.set_normalization_used(mean=loader.dataset.dataset.MEAN, std=loader.dataset.dataset.STD)
 
-for index , img , labels in tqdm(loader):
+# for index , img , labels in tqdm(loader):
+for  img , labels in tqdm(loader):
     img = img.cuda()
     labels = labels.cuda()
     for i in range(len(img)):
-        adv_views = [ system.unnormalize(atk(system.normalize(img[i]),labels[i].unsqueeze(0))).cpu() for jj in range(num_views)]
+        # adv_views = [ system.unnormalize(atk(system.normalize(img[i]),labels[i].unsqueeze(0))).cpu() for jj in range(num_views)]
+        adv_views = [ system.unnormalize(atk(img[i],labels[i].unsqueeze(0))).cpu() for jj in range(num_views)]
         class_i = labels[i].cpu().item()
-        original = img[i].cpu()
+        original = system.unnormalize(img[i]).cpu()
         save_func(original,adv_views,class_i,class_names)
             
