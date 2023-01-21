@@ -1219,6 +1219,11 @@ class MNISTViewMaker(BirdsViewMaker):
                 super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
             else:
                 optimizer_closure()
+        elif optimizer_idx == 0:
+            if self.trainer.global_step % self.config.enc_every == 0 and epoch > self.config.start_enc:
+                super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
+            else:
+                optimizer_closure()
 
         else:
             super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)

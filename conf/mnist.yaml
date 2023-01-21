@@ -4,7 +4,7 @@ data_root: /workspace/dabs/data
 debug: true
 
 start_enc: 0
-enc_every: 1
+enc_every: 2
 gen_every: 1
 start_gen: 0
 system: MNISTViewmakerSystem
