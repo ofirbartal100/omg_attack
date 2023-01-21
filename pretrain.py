@@ -6,8 +6,8 @@ from datetime import datetime
 
 
 # pretrain_original
-# @hydra.main(config_path='conf', config_name='mnist')
-@hydra.main(config_path='conf', config_name='cifar')
+@hydra.main(config_path='conf', config_name='mnist')
+# @hydra.main(config_path='conf', config_name='cifar')
 def run(config):
     # Deferred imports for faster tab completion
     import os

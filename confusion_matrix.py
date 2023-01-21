@@ -10,7 +10,8 @@ from tqdm import tqdm
 import os 
 from torchvision.utils import save_image
 import torch.nn.functional as F
-
+import numpy as np
+import pandas as pd
 import torchattacks as ta
 
 # %%
@@ -79,27 +80,39 @@ threat_model  = system.model.traffic_model
 # from torchvision import datasets, transforms
 # from gtsrb_pytorch.data import *
 # loader = val_loader = torch.utils.data.DataLoader(datasets.ImageFolder('/workspace/gtsrb_pytorch/data/val_images',transform=data_transforms), batch_size=32, shuffle=False, num_workers=4, pin_memory=True)
-# MEAN,STD = np.array([0.3337, 0.3064, 0.3171],dtype=np.float32), np.array([ 0.2672, 0.2564, 0.2629],dtype=np.float32)
+MEAN,STD = np.array([0.3337, 0.3064, 0.3171],dtype=np.float32), np.array([ 0.2672, 0.2564, 0.2629],dtype=np.float32)
 class_names = [str(i) for i in range(43)] # map between label index and class name
 
 # %%
+
+pl.seed_everything(123654)
+
 
 df_dict = {
     "label" : [],
     "pred" : [],
     "adv_pred": []
 }
+num_views = 3
 
-for index , img , labels in tqdm(loader):
-    with torch.no_grad():
+loaders = [system.train_dataloader(), system.val_dataloader()]
+
+num_views = 1
+atk = ta.FGSM(threat_model, eps=0.005)
+atk.set_normalization_used(mean=MEAN, std=STD)
+for loader in loaders:
+    for index , img , labels in tqdm(loader):
+        # with torch.no_grad():
         img = img.cuda()
-        views1, _ = system.view(img, True)
-        pred = threat_model(system.normalize(img)).argmax(1, keepdim = True)
-        adv_pred = threat_model(views1).argmax(1, keepdim = True)
+        for i in range(num_views):
+            # views1, _ = system.view(img, True)
+            views1 = atk(system.normalize(img),labels)
+            pred = threat_model(system.normalize(img)).argmax(1, keepdim = True)
+            adv_pred = threat_model(views1).argmax(1, keepdim = True)
 
-        df_dict['label'].append(labels.unsqueeze(-1).cpu())
-        df_dict['pred'].append(pred.cpu())
-        df_dict['adv_pred'].append(adv_pred.cpu())
+            df_dict['label'].append(labels.unsqueeze(-1).cpu())
+            df_dict['pred'].append(pred.cpu())
+            df_dict['adv_pred'].append(adv_pred.cpu())
 
 
 df_dict['label'] = torch.vstack(df_dict['label']).squeeze().numpy()

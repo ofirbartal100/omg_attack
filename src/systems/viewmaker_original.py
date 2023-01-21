@@ -1213,6 +1213,15 @@ class MNISTViewMaker(BirdsViewMaker):
         # elif mean_encoder_acc<0.3:
         #     self.config.gen_every = 1
 
+    def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False):
+        if optimizer_idx == 1:
+            if self.trainer.global_step % self.config.gen_every == 0 and epoch > self.config.start_gen:
+                super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
+            else:
+                optimizer_closure()
+
+        else:
+            super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
 
 
 class CIFARViewMaker(BirdsViewMaker):

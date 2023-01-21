@@ -1,28 +1,29 @@
 algorithm: mnist_viewmaker
 data_root: /workspace/dabs/data
 
-debug: false
+debug: true
 
 start_enc: 0
+enc_every: 1
+gen_every: 1
+start_gen: 0
 system: MNISTViewmakerSystem
 
 disc:
-  adv_loss_weight: 1
-  adv_loss_weight_gen: 0.3
+  adv_loss_weight: 5
+  adv_loss_weight_gen: 10
   conv_blocks: 4
   dis_skip_steps: 0
-  enc_loss_weight: 10
+  enc_loss_weight: 2
   gan_warmup: 1
   lr: 0.0001
   r1_penalty_weight: 1.0e-05
   wgan: false
 
 embd_dim: 128
-enc_every: 1
 exp:
   base_dir: /workspace/dabs/exp/models
   name: mnist_sweep
-gen_every: 1
 gpus: [0]
 
 loss_params:
@@ -32,7 +33,7 @@ loss_params:
 
 model_params:
   additive: 1
-  additive_budget: 0.05
+  additive_budget: 0.15
   aug_proba: 1
   budget_aware: false
   clamp_views: false
@@ -68,7 +69,7 @@ trainer:
   distributed_backend: dp
   gradient_clip_val: 0
   limit_val_batches: 1.0
-  max_steps: 60001
+  max_steps: 15001
   model_checkpoint_freq: 20000
   precision: 32
   resume_from_checkpoint: null
