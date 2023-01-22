@@ -20,10 +20,10 @@ disc:
   r1_penalty_weight: 1.0e-05
   wgan: false
 
-embd_dim: 128
+embd_dim: 200 #128
 exp:
   base_dir: /workspace/dabs/exp/models
-  name: mnist_sweep
+  name: mnist_80%
 gpus: [0]
 
 loss_params:

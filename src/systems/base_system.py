@@ -89,8 +89,8 @@ class BaseSystem(pl.LightningModule):
 
     def setup(self, stage):
         '''Called right after downloading data and before fitting model, initializes datasets with splits.'''
-        self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True)
-        self.val_dataset = self.dataset(base_root=self.config.data_root, download=True, train=False)
+        self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True )#, classes_to_mask=[0,5])
+        self.val_dataset = self.dataset(base_root=self.config.data_root, download=True, train=False )#, classes_to_mask=[0,5])
 
         self.train_loader_indices = fraction_db(self.train_dataset, self.low_data)[0]
         self.val_loader_indices = fraction_db(self.val_dataset, self.low_data)[0]
