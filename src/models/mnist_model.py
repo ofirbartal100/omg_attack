@@ -10,15 +10,16 @@ from types import MethodType
 
 class MnistModel(BaseModel):
 
-    def __init__(self, mnist_model_path ,input_specs: List[Dict[str, Any]]):
+    def __init__(self, mnist_model_path,input_specs: List[Dict[str, Any]]):
         super(MnistModel, self).__init__(None)
         self.mnist_model_path = mnist_model_path
 
         type_net = 'c'
-        # type_net = 'm'
-
+        type_net = 'm'
+        
         if type_net == 'c':
-            self.mnist_model = Model_C(1,8)
+            # self.mnist_model = Model_C(1,8)
+            self.mnist_model = Model_C(1,10)
             def forward(self, x):
                 x = F.relu(self.conv1_1(x))
                 x = F.relu(self.conv1_2(x))

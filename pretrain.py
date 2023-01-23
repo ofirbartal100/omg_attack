@@ -3,11 +3,11 @@ import warnings
 warnings.filterwarnings('ignore')
 import hydra
 from datetime import datetime
-
+import torch
 
 # pretrain_original
-@hydra.main(config_path='conf', config_name='mnist')
-# @hydra.main(config_path='conf', config_name='cifar')
+# @hydra.main(config_path='conf', config_name='mnist')
+@hydra.main(config_path='conf', config_name='cifar')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -90,6 +90,9 @@ def run(config):
     #    )
     #    callbacks += [ssl_online_evaluator]
 
+    # if config.trainer.resume_from_checkpoint is not None:
+    #     system.load_state_dict(torch.load(config.trainer.resume_from_checkpoint).state_dict())
+
     # PyTorch Lightning Trainer.
     trainer = pl.Trainer(
         default_root_dir=save_dir,
@@ -97,7 +100,7 @@ def run(config):
         gpus=config.gpus,  # GPU indices
         max_steps=config.trainer.max_steps,
         min_steps=config.trainer.max_steps,
-        resume_from_checkpoint=config.trainer.resume_from_checkpoint if config.start_enc > 0 else None,
+        # resume_from_checkpoint= None ,
         val_check_interval=config.trainer.val_check_interval,
         limit_val_batches=config.trainer.limit_val_batches,
         callbacks=callbacks,

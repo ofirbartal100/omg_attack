@@ -1,14 +1,18 @@
 program:  /workspace/dabs/pretrain.py
 method: grid
 parameters:
+  gen_every:
+    values: [1,2]
+  enc_every: 
+    values: [1,2]
   disc.adv_loss_weight:
-    values: [5,10]
+    value: 5
   disc.enc_loss_weight:
-    values: [5,20]
+    value: 5
   disc.adv_loss_weight_gen:
-    values: [5,10]
+    values: [0.5,5]
   model_params.additive_budget:
-    values: [0.01 ,0.05]
+    value: 0.035
   optim_params.viewmaker_learning_rate:
     value: 0.0001
   disc.lr:

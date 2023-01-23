@@ -1359,3 +1359,20 @@ class CIFARViewMaker(BirdsViewMaker):
                     self.logger.experiment.add_scalar("model_acc_top5", emb_dict['model_acc_top5'], self.global_step)
                     self.logger.experiment.add_scalar("view_acc_top1", (emb_dict['view1_acc_top1']+emb_dict['view2_acc_top1'])/2, self.global_step)
                     self.logger.experiment.add_scalar("view_acc_top5", (emb_dict['view1_acc_top5']+emb_dict['view2_acc_top5'])/2, self.global_step)
+    
+
+    def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False,using_native_amp=False, using_lbfgs=False):
+        if optimizer_idx == 1: #gen
+            if self.trainer.global_step % self.config.gen_every == 0 and epoch > self.config.start_gen:
+                super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
+            else:
+                optimizer_closure()
+        elif optimizer_idx == 0: #enc
+            if self.trainer.global_step % self.config.enc_every == 0 and epoch > self.config.start_enc:
+                super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
+            else:
+                optimizer_closure()
+
+        else:
+            super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
+
