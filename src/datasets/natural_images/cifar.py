@@ -14,13 +14,13 @@ class CIFAR10(Dataset):
     INPUT_SIZE = (224, 224)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
-    MEAN = [0.4914, 0.4822, 0.4465]
-    STD = [0.1953, 0.1925, 0.1942]
+    MEAN = [0.49139968, 0.48215827 ,0.44653124]
+    STD = [0.24703233, 0.24348505, 0.26158768]
     
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
-        self.root = os.path.join(base_root, 'natural_images', 'cifar10')
+        self.root = os.path.join(base_root, 'natural_images', 'CIFAR10')
         if not os.path.isdir(self.root):
             os.makedirs(self.root)
         self.transforms = transforms.Compose(

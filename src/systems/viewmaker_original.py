@@ -1294,12 +1294,7 @@ class CIFARViewMaker(BirdsViewMaker):
         return encoder_loss, encoder_acc, view_maker_loss, positive_sim, negative_sim , positive_similarity_of_views
 
    
-    def training_epoch_end(self, outputs) -> None:
-        mean_encoder_acc = np.mean(list(chain(*[ [oo['encoder_acc'].item() for oo in o] for o in outputs])))
-        # if mean_encoder_acc>0.6:
-        #     self.config.gen_every = 2
-        # elif mean_encoder_acc<0.3:
-        #     self.config.gen_every = 1
+    
 
     def wandb_logging(self, emb_dict):
         with torch.no_grad():
@@ -1376,3 +1371,28 @@ class CIFARViewMaker(BirdsViewMaker):
         else:
             super().optimizer_step(epoch, batch_idx, optimizer, optimizer_idx, optimizer_closure, on_tpu=False , using_native_amp=False, using_lbfgs=False)
 
+
+    def training_step_end(self, train_step_outputs):
+        loss, emb_dict, metrics = train_step_outputs
+        # reduce distributed results
+        loss = loss.mean()
+        metrics = {k: v.mean().detach().cpu() for k, v in metrics.items()}
+        self.wandb_logging(emb_dict)
+        self.log_dict(metrics)
+
+        self.add_to_memory_bank(emb_dict)
+
+        return {'loss':loss ,'gen_acc':metrics['gen_acc'],'encoder_acc':metrics['encoder_acc']}
+    
+    def training_epoch_end(self, outputs) -> None:
+        mean_gen_acc = np.mean(list(chain(*[ [oo['gen_acc'].item() for oo in o] for o in outputs])))
+        mean_enc_acc = np.mean(list(chain(*[ [oo['encoder_acc'].item() for oo in o] for o in outputs])))
+        if mean_gen_acc<0.1:
+            self.config.enc_every = 2
+            self.config.gen_every = 1
+        elif mean_enc_acc>0.8:
+            self.config.enc_every = 1
+            self.config.gen_every = 3
+        else:
+            self.config.enc_every = 1
+            self.config.gen_every = 1

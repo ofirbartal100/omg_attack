@@ -1,5 +1,5 @@
 import os
-
+import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
@@ -122,6 +122,31 @@ class CUBirds(Dataset):
         std = torch.tensor(CUBirds.STD, device=imgs.device)
         imgs = (imgs * std[None, :, None, None]) + mean[None, :, None, None]
         return imgs
+
+
+class CUBirds80Percent(CUBirds):
+    def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
+        super(CUBirds,self).__init__(base_root, download, train)
+
+        # import random
+        # cls =[ i for i in range(200)]
+        # random.shuffle(cls)
+        # cls[:int(0.8*len(cls))]
+        classes_to_mask = [51, 4, 155, 159, 116, 197, 157, 73, 56, 23, 2, 102, 22, 50, 119, 5, 111, 88, 100, 71, 44, 59, 84, 11, 27, 70, 46, 175, 148, 91, 189, 8, 32, 66, 183, 188, 194, 38, 81, 104]
+        if classes_to_mask is not None:
+            # 80% classes
+            CUBirds80Percent.NUM_CLASSES = CUBirds.NUM_CLASSES - len(classes_to_mask)
+            # train
+            maskout = [ np.array(self.labels) == ctmo for ctmo in classes_to_mask]
+            maskout = (~ (np.stack(maskout,axis=0).sum(0).astype(bool))).tolist()
+            self.labels = [self.labels[i] for i in range(len(maskout)) if maskout[i]]
+            self.paths = [self.paths[i] for i in range(len(maskout)) if maskout[i]]
+            shift = np.stack([ np.array(self.labels) > ctmo for ctmo in classes_to_mask],axis=0).sum(0).tolist()
+            self.labels = [self.labels[i] - shift[i] for i in range(len(shift))]
+
+    @staticmethod
+    def num_classes():
+        return CUBirds80Percent.NUM_CLASSES
 
 class CUBirdsSmall(CUBirds):
     INPUT_SIZE = (32, 32)

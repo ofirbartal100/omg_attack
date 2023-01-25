@@ -34,12 +34,18 @@ def get_model(config: DictConfig, **kwargs):
     elif "jit" in config.model.name:
         model_class = jit_model.JitModel
         dataset_class = lfw.LFW112 
-    elif "traffic" in config.model.name:
+    elif "traffic" == config.model.name:
         model_class = traffic_model.TrafficModel
         dataset_class = traffic_sign.TrafficSignSmall 
-    elif "birds" in config.model.name:
+    elif "traffic_model_80" == config.model.name:
+        model_class = traffic_model.TrafficModel80
+        dataset_class = traffic_sign.TrafficSignSmall80Percent
+    elif "cu_birds" == config.model.name:
         model_class = birds_model.BirdsModel
         dataset_class = cu_birds.CUBirds
+    elif "cu_birds_80" == config.model.name:
+        model_class = birds_model.BirdsModel80
+        dataset_class = cu_birds.CUBirds80Percent
     elif "mnist_model" in config.model.name:
         model_class = mnist_model.MnistModel
         dataset_class = mnist.MNIST
@@ -89,8 +95,8 @@ class BaseSystem(pl.LightningModule):
 
     def setup(self, stage):
         '''Called right after downloading data and before fitting model, initializes datasets with splits.'''
-        self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True )#, classes_to_mask=[0,5])
-        self.val_dataset = self.dataset(base_root=self.config.data_root, download=True, train=False )#, classes_to_mask=[0,5])
+        self.train_dataset = self.dataset(base_root=self.config.data_root, download=True, train=True )
+        self.val_dataset = self.dataset(base_root=self.config.data_root, download=True, train=False )
 
         self.train_loader_indices = fraction_db(self.train_dataset, self.low_data)[0]
         self.val_loader_indices = fraction_db(self.val_dataset, self.low_data)[0]

@@ -1,6 +1,40 @@
 results
 Global seed set to 123654
 
+Mnist Transfer C->A
+Original Acc=99.34% , Adv Acc=0.73% (ASR=99.27) , Consistency Acc=0.70(ASR=99.30)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt', 'threat_model_name': 'Model_A', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_Model_A_mnist.pth.tar', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt'}}
+
+Original Acc=99.34% , Adv Acc=17.35% (ASR=82.65) , Consistency Acc=17.37(ASR=82.63)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt', 'threat_model_name': 'Model_A', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_Model_A_mnist.pth.tar', 'attack': 'advgan', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt'}}
+
+Original Acc=99.34% , Adv Acc=43.59% (ASR=56.41) , Consistency Acc=44.17(ASR=55.83)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt', 'threat_model_name': 'Model_A', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_Model_A_mnist.pth.tar', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt', 'threat_model': Model_C(
+  
+
+
+Mnist Transfer C->B
+Original Acc=99.67% , Adv Acc=0.45% (ASR=99.55) , Consistency Acc=0.44(ASR=99.56)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt', 'threat_model_name': 'Model_B', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_Model_B_mnist.pth.tar', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt'}}
+
+Original Acc=99.67% , Adv Acc=27.64% (ASR=72.36) , Consistency Acc=27.65(ASR=72.35)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt', 'threat_model_name': 'Model_B', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_Model_B_mnist.pth.tar', 'attack': 'advgan', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt'}}
+
+Original Acc=99.67% , Adv Acc=39.16% (ASR=60.84) , Consistency Acc=39.45(ASR=60.55)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt', 'threat_model_name': 'Model_B', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_Model_B_mnist.pth.tar', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt', 'threat_model': Model_C(
+
+
+Mnist Transfer C->resnet18
+
+Original Acc=92.22% , Adv Acc=7.92% (ASR=92.08) , Consistency Acc=10.33(ASR=89.67)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt', 'threat_model_name': 'resnet18', 'threat_model_path': '/workspace/MNIST/mnist_res18.pt', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt'}}
+
+Original Acc=92.22% , Adv Acc=22.88% (ASR=77.12) , Consistency Acc=27.70(ASR=72.30)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt', 'threat_model_name': 'resnet18', 'threat_model_path': '/workspace/MNIST/mnist_res18.pt', 'attack': 'advgan', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt'}}
+
+Original Acc=92.22% , Adv Acc=37.84% (ASR=62.16) , Consistency Acc=43.59(ASR=56.41)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt', 'threat_model_name': 'resnet18', 'threat_model_path': '/workspace/MNIST/mnist_res18.pt', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt', 'threat_model': Model_C(
+
 
 Mnist Model C
 Original Acc=99.87% , Adv Acc=10.72% (ASR=89.28) , Consistency Acc=10.72(ASR=89.28)
@@ -48,9 +82,8 @@ GTSRB STN CNN
 Original Acc=100.00% , Adv Acc=41.54% (ASR=58.46) , Consistency Acc=41.54(ASR=58.46)
 {'dataset': 'traffic', 'system_ckpt': '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt', 'threat_model_name': 'stn-cnn', 'threat_model_path': '/workspace/gtsrb_pytorch/model/model_40.pth', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'stn-cnn', 'thresh': 0.005, 'threat_model_path': '/workspace/gtsrb_pytorch/model/model_40.pth'}}
 
-Original Acc=100.00% , Adv Acc=98.70% (ASR=1.30) , Consistency Acc=98.70(ASR=1.30)
+Original Acc=100.00% , Adv Acc=97.70% (ASR=2.30) , Consistency Acc=97.70(ASR=2.30)
 {'dataset': 'traffic', 'system_ckpt': '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt', 'threat_model_name': 'stn-cnn', 'threat_model_path': '/workspace/gtsrb_pytorch/model/model_40.pth', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'stn-cnn', 'thresh': 0.005, 'threat_model_path': '/workspace/gtsrb_pytorch/model/model_40.pth', 'threat_model': Net(
-  (conv1): Conv2d(3, 100, kernel_size=(5, 5), stride=(1, 1))
 
 
 GTSRB STN CNN  Defended 
@@ -58,16 +91,24 @@ GTSRB STN CNN  Defended
 Original Acc=99.53% , Adv Acc=41.77% (ASR=58.23) , Consistency Acc=41.79(ASR=58.21)
 {'dataset': 'traffic', 'system_ckpt': '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt', 'threat_model_name': 'stn-cnn', 'threat_model_path': '/workspace/gtsrb_pytorch/model_defended.pth', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'stn-cnn', 'thresh': 0.005, 'threat_model_path': '/workspace/gtsrb_pytorch/model/model_40.pth'}}
                                                                                                                                                                                                                                                  
-Original Acc=99.53% , Adv Acc=97.97% (ASR=2.03) , Consistency Acc=98.38(ASR=1.62)
+Original Acc=99.53% , Adv Acc=97.72% (ASR=2.28) , Consistency Acc=98.15(ASR=1.85)
 {'dataset': 'traffic', 'system_ckpt': '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt', 'threat_model_name': 'stn-cnn', 'threat_model_path': '/workspace/gtsrb_pytorch/model_defended.pth', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'stn-cnn', 'thresh': 0.005, 'threat_model_path': '/workspace/gtsrb_pytorch/model/model_40.pth', 'threat_model': Net(
 
+
+GTSRB STN CNN -> Resnet50
+
+Original Acc=97.70% , Adv Acc=51.74% (ASR=48.26) , Consistency Acc=52.50(ASR=47.50)
+{'dataset': 'traffic', 'system_ckpt': '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt', 'threat_model_name': 'resnet50', 'threat_model_path': '/workspace/gtsrb_pytorch/gtsrb_resnet50.pth', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'stn-cnn', 'thresh': 0.005, 'threat_model_path': '/workspace/gtsrb_pytorch/model/model_40.pth'}}
+
+Original Acc=97.70% , Adv Acc=96.48% (ASR=3.52) , Consistency Acc=98.61(ASR=1.39)
+{'dataset': 'traffic', 'system_ckpt': '/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt', 'threat_model_name': 'resnet50', 'threat_model_path': '/workspace/gtsrb_pytorch/gtsrb_resnet50.pth', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'stncnn', 'thresh': 0.005, 'threat_model_path': '/workspace/gtsrb_pytorch/model/model_40.pth', 'threat_model': Net(
 
 Birds Resnet 18 
 
 Original Acc=90.19% , Adv Acc=50.96% (ASR=49.04) , Consistency Acc=52.88(ASR=47.12)
 {'dataset': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet18', 'threat_model_path': '/workspace/cubirds/resnet18-224.pt', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'resnet18', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-224.pt'}}
 
-Original Acc=90.19% , Adv Acc=7.30% (ASR=92.70) , Consistency Acc=9.92(ASR=90.08)
+Original Acc=90.19% , Adv Acc=1.24% (ASR=98.76) , Consistency Acc=7.19(ASR=92.81)
 {'dataset': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet18', 'threat_model_path': '/workspace/cubirds/resnet18-224.pt', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'resnet18', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-224.pt', 'threat_model': ResNet(
 
 Birds Resnet 18 Defended
@@ -75,6 +116,59 @@ Birds Resnet 18 Defended
 Original Acc=87.52% , Adv Acc=57.45% (ASR=42.55) , Consistency Acc=61.00(ASR=39.00)
 {'dataset': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet18', 'threat_model_path': '/workspace/cubirds/resnet18-adv.pt', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'resnet18', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-224.pt'}}
 
-Original Acc=87.52% , Adv Acc=79.62% (ASR=20.38) , Consistency Acc=88.19(ASR=11.81)
-{'dataset': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet18', 'threat_model_path': '/workspace/cubirds/resnet18-adv.pt', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'resnet18', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-224.pt', 'threat_model': ResNet(
+Original Acc=87.52% , Adv Acc=76.40% (ASR=23.60) , Consistency Acc=85.47(ASR=14.53)
+{'dataset': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet18_defended', 'threat_model_path': '/workspace/cubirds/resnet18-adv.pt', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'resnet18', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-224.pt', 'threat_model': ResNet(
+
+Birds Resnet18 -> Resnet50 ?(check if ckpt is good)
+
+Original Acc=88.36% , Adv Acc=49.79% (ASR=50.21) , Consistency Acc=51.76(ASR=48.24)
+{'dataset': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet50', 'threat_model_path': '/workspace/cubirds/test.pt', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'resnet18', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-224.pt'}}
+
+Original Acc=88.36% , Adv Acc=55.94% (ASR=44.06) , Consistency Acc=61.84(ASR=38.16)
+{'dataset': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet50', 'threat_model_path': '/workspace/cubirds/test.pt', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'resnet18', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-224.pt', 'threat_model': ResNet(
+
+
+Birds Resnet18 -> Resnet50 Wide ?(check if ckpt is good)
+
+Original Acc=89.60% , Adv Acc=51.26% (ASR=48.74) , Consistency Acc=53.16(ASR=46.84)
+{'dataset': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet50w', 'threat_model_path': '/workspace/cubirds/wres50.pt', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'resnet18', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-224.pt'}}
+
+Original Acc=89.60% , Adv Acc=61.15% (ASR=38.85) , Consistency Acc=66.59(ASR=33.41)
+{'dataset': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet50w', 'threat_model_path': '/workspace/cubirds/wres50.pt', 'attack': 'fgsm', 'attack_config': {'num_views': 3, 'threat_model_name': 'resnet18', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-224.pt', 'threat_model': ResNet(
+
+
+
+CIFAR10 ASR
+
+Original Acc=93.64% , Adv Acc=86.21% (ASR=13.79) , Consistency Acc=88.46(ASR=11.54)
+{'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'threat_model_name': 'resnet34', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'attack': 'advgan', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar'}}
+
+Original Acc=93.64% , Adv Acc=9.08% (ASR=90.92) , Consistency Acc=14.50(ASR=85.50)
+{'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'threat_model_name': 'resnet34', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'attack': 'fgsm', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'threat_model': ResNet(
+
+
+CIFAR10 Resnet34 -> Resnet50 Wide
+
+Original Acc=94.81% , Adv Acc=44.14% (ASR=55.86) , Consistency Acc=47.84(ASR=52.16)
+{'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'threat_model_name': 'resnet50w', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet50w_cifar10.pth.tar', 'attack': 'fgsm', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'threat_model': ResNet(
+
+
+#####################################
+Transfer 80 -> 20 
+
+Mnist 
+Original Acc=99.89% , Adv Acc=14.43% (ASR=85.57) , Consistency Acc=14.44(ASR=85.56)
+{'dataset': 'mnist', 'system_ckpt': '/workspace/dabs/exp/models/mnist_80%_2023-01-22_12:05:47/model.ckpt', 'threat_model_name': 'Model_C_80%', 'threat_model_path': '/workspace/MNIST/model_c_not_normalized_8_cls.pt', 'attack': 'vm', 'attack_config': {'num_views': 3, 'threat_model_name': 'Model_C', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized.pt'}}
+
+Original Acc=99.84% , Adv Acc=53.50% (ASR=46.50) , Consistency Acc=53.51(ASR=46.49) (unseen classes [0,5])
+Original Acc=99.87% , Adv Acc=15.74% (ASR=84.26) , Consistency Acc=15.75(ASR=84.25) (seen classes ~[0,5])
+
+
+Original Acc=99.89% , Adv Acc=18.97% (ASR=81.03) , Consistency Acc=18.97(ASR=81.03)
+{'dataset': 'mnist', 'system_for_dataset': '/workspace/dabs/exp/models/mnist_80%_2023-01-22_12:05:47/model.ckpt', 'threat_model_name': 'Model_C_80%', 'threat_model_path': '/workspace/MNIST/model_c_not_normalized_8_cls.pt', 'attack': 'advgan', 'attack_config': {'system_ckpt': '/workspace/dabs/exp/models/mnist_80%_2023-01-22_12:05:47/model.ckpt', 'num_views': 3, 'threat_model_name': 'Model_C_80%', 'thresh': 0.3, 'threat_model_path': '/workspace/MNIST/model_c_not_normalized_8_cls.pt'}}
+
+Original Acc=99.84% , Adv Acc=68.27% (ASR=31.73) , Consistency Acc=68.31(ASR=31.69)
+Original Acc=99.87% , Adv Acc=27.79% (ASR=72.21) , Consistency Acc=27.80(ASR=72.20)
+
+
 

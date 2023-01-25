@@ -133,3 +133,27 @@ class BirdsModel(BaseModel):
         y_pred, hidden = self.birds_model(x)
         return hidden
 
+class BirdsModel80(BaseModel):
+
+    def __init__(self, birds_model_path ,input_specs: List[Dict[str, Any]]):
+        super(BirdsModel, self).__init__(None)
+        OUTPUT_DIM = 200-40
+        ResNetConfig = namedtuple('ResNetConfig', ['block', 'n_blocks', 'channels'])
+        resnet18_config = ResNetConfig(block = BasicBlock,n_blocks = [2,2,2,2],channels = [64, 128, 256, 512])
+        self.birds_model = ResNet(resnet18_config, OUTPUT_DIM)
+        self.birds_model.load_state_dict(torch.load(birds_model_path))
+        for p in self.birds_model.parameters():
+            p.requires_grad = False
+        self.birds_model.eval()
+
+
+    def embed(self, inputs: Sequence[torch.Tensor]):
+        x = torch.cat(inputs, dim=0)
+        return x
+
+    def encode(self, x: torch.Tensor, **kwargs):
+        if self.birds_model.training:
+            self.birds_model.eval()
+        y_pred, hidden = self.birds_model(x)
+        return hidden
+

@@ -24,12 +24,9 @@ class TrafficSign(Dataset):
     INPUT_SIZE = (224, 224)
     PATCH_SIZE = (16, 16)
     IN_CHANNELS = 3
-    # MEAN = [0.335, 0.291, 0.295]
-    # STD = [0.267, 0.249, 0.251]
 
     MEAN = [0.3337, 0.3064, 0.3171]
     STD = [0.2672, 0.2564, 0.2629]
-    # (0.3337, 0.3064, 0.3171), ( 0.2672, 0.2564, 0.2629)
 
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
         super().__init__()
@@ -153,3 +150,30 @@ class TrafficSignSmall(TrafficSign):
                 in_channels=TrafficSignSmall.IN_CHANNELS,
             ),
         ]
+
+
+class TrafficSignSmall80Percent(TrafficSignSmall):
+    def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
+        super(TrafficSignSmall,self).__init__(base_root, download, train)
+
+        classes_to_mask = [23,36,24,17,4,31,42,10]
+        if classes_to_mask is not None:
+            # 80% classes
+            TrafficSignSmall80Percent.NUM_CLASSES = TrafficSign.NUM_CLASSES - len(classes_to_mask)
+            # train
+            # maskout = [ torch.Tensor(self.labels) == ctmo for ctmo in classes_to_mask]
+            # maskout = ~ (torch.stack(maskout,axis=0).sum(0).bool())
+            # self.labels = self.labels[maskout]
+            # self.paths = self.paths[maskout]
+            # shift = torch.stack([ self.labels > ctmo for ctmo in classes_to_mask],axis=0).sum(0)
+            # self.labels = self.labels - shift
+            maskout = [ np.array(self.labels) == ctmo for ctmo in classes_to_mask]
+            maskout = (~ (np.stack(maskout,axis=0).sum(0).astype(bool))).tolist()
+            self.labels = [self.labels[i] for i in range(len(maskout)) if maskout[i]]
+            self.paths = [self.paths[i] for i in range(len(maskout)) if maskout[i]]
+            shift = np.stack([ np.array(self.labels) > ctmo for ctmo in classes_to_mask],axis=0).sum(0).tolist()
+            self.labels = [self.labels[i] - shift[i] for i in range(len(shift))]
+
+    @staticmethod
+    def num_classes():
+        return TrafficSignSmall80Percent.NUM_CLASSES
