@@ -40,10 +40,10 @@ def get_model(config: DictConfig, **kwargs):
     elif "traffic_model_80" == config.model.name:
         model_class = traffic_model.TrafficModel80
         dataset_class = traffic_sign.TrafficSignSmall80Percent
-    elif "cu_birds" == config.model.name:
+    elif "birds_model" == config.model.name:
         model_class = birds_model.BirdsModel
         dataset_class = cu_birds.CUBirds
-    elif "cu_birds_80" == config.model.name:
+    elif "birds_model_80" == config.model.name:
         model_class = birds_model.BirdsModel80
         dataset_class = cu_birds.CUBirds80Percent
     elif "mnist_model" in config.model.name:

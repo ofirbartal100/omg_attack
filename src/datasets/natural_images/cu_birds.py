@@ -126,7 +126,7 @@ class CUBirds(Dataset):
 
 class CUBirds80Percent(CUBirds):
     def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
-        super(CUBirds,self).__init__(base_root, download, train)
+        CUBirds.__init__(self,base_root, download, train)
 
         # import random
         # cls =[ i for i in range(200)]
@@ -137,12 +137,12 @@ class CUBirds80Percent(CUBirds):
             # 80% classes
             CUBirds80Percent.NUM_CLASSES = CUBirds.NUM_CLASSES - len(classes_to_mask)
             # train
-            maskout = [ np.array(self.labels) == ctmo for ctmo in classes_to_mask]
+            maskout = [ np.array([int(l) for l in self.labels]) == ctmo for ctmo in classes_to_mask]
             maskout = (~ (np.stack(maskout,axis=0).sum(0).astype(bool))).tolist()
             self.labels = [self.labels[i] for i in range(len(maskout)) if maskout[i]]
             self.paths = [self.paths[i] for i in range(len(maskout)) if maskout[i]]
-            shift = np.stack([ np.array(self.labels) > ctmo for ctmo in classes_to_mask],axis=0).sum(0).tolist()
-            self.labels = [self.labels[i] - shift[i] for i in range(len(shift))]
+            shift = np.stack([ np.array([int(l) for l in self.labels]) > ctmo for ctmo in classes_to_mask],axis=0).sum(0).tolist()
+            self.labels = [str(int(self.labels[i]) - shift[i]) for i in range(len(shift))]
 
     @staticmethod
     def num_classes():

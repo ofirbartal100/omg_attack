@@ -90,22 +90,31 @@ def load_model(dataset,model_type,model_path):
             fc = nn.Linear(IN_FEATURES, OUTPUT_DIM)
             model.fc = fc
             threat_model  = model
-        elif 'stncnn' in model_type:    
+        elif 'stncnn' == model_type:    
             threat_model  = TrafficNET()
+            threat_model.forward = threat_model.forward_original
+        elif 'stncnn_80%' == model_type:    
+            threat_model  = TrafficNET()
+            classes_to_mask = [23,36,24,17,4,31,42,10]
+            threat_model.fc2 = nn.Linear(350, 43-len(classes_to_mask))
             threat_model.forward = threat_model.forward_original
 
     elif dataset == 'birds':
 
-        if 'resnet18' in model_type:
+        OUTPUT_DIM = 200
+
+        if 'resnet18' == model_type:
             model = models.resnet18(pretrained = True)
+        if 'resnet18_80%' == model_type:
+            model = models.resnet18(pretrained = True)
+            OUTPUT_DIM = 200-40
+
         elif model_type == 'resnet50':
             model = models.resnet50(pretrained = True)
         elif model_type == 'resnet50w':
             model = models.wide_resnet50_2(pretrained = True)
 
         IN_FEATURES = model.fc.in_features 
-        OUTPUT_DIM = 200
-
         fc = nn.Linear(IN_FEATURES, OUTPUT_DIM)
         model.fc = fc
         threat_model  = model
@@ -159,24 +168,24 @@ mnist_paths ={
     "resnet18": '/workspace/MNIST/mnist_res18.pt',
 }
 
-run_config={
-    'dataset' : 'mnist',
-    'system_for_dataset':'/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt',
-    # 'system_for_dataset':'/workspace/dabs/exp/models/mnist_80%_2023-01-22_12:05:47/model.ckpt',
-    'threat_model_name': 'Model_C',
-    'threat_model_path': mnist_paths['Model_C'],
-    # 'attack':'vm',
-    'attack':'advgan',
-    # 'attack':'fgsm',
-    'attack_config':{
-        'dataset_name': 'mnist',
-        'system_ckpt':'/workspace/dabs/exp/models/mnist_80%_2023-01-22_12:05:47/model.ckpt',
-        'num_views': 3,
-        'threat_model_name': 'Model_C_80%',
-        'thresh':0.3,
-        'threat_model_path': mnist_paths['Model_C_80%'],
-    }
-}
+# run_config={
+#     'dataset' : 'mnist',
+#     'system_for_dataset':'/workspace/dabs/exp/models/mnist_sweep_2023-01-21_06:32:36/model.ckpt',
+#     # 'system_for_dataset':'/workspace/dabs/exp/models/mnist_80%_2023-01-22_12:05:47/model.ckpt',
+#     'threat_model_name': 'Model_C',
+#     'threat_model_path': mnist_paths['Model_C'],
+#     # 'attack':'vm',
+#     'attack':'advgan',
+#     # 'attack':'fgsm',
+#     'attack_config':{
+#         'dataset_name': 'mnist',
+#         'system_ckpt':'/workspace/dabs/exp/models/mnist_80%_2023-01-22_12:05:47/model.ckpt',
+#         'num_views': 3,
+#         'threat_model_name': 'Model_C_80%',
+#         'thresh':0.3,
+#         'threat_model_path': mnist_paths['Model_C_80%'],
+#     }
+# }
 
 traffic_paths ={
     "stncnn": '/workspace/gtsrb_pytorch/model/model_40.pth',
@@ -186,25 +195,25 @@ traffic_paths ={
 }
 
 
-run_config={
-    'dataset' : 'traffic',
-    # 'system_for_dataset':'/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt',
-    'system_ckpt':'/workspace/dabs/exp/models/traffic_80_budget=0.005_2023-01-25_10:50:22/model.ckpt',
-    'threat_model_name': 'stncnn_80%',
-    'threat_model_path': traffic_paths['stncnn_80%'],
-    'attack':'vm',
-    # 'attack':'advgan',
-    # 'attack':'fgsm',
-    'attack_config':{
-        'dataset_name': 'traffic',
-        # 'system_ckpt':'/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt',
-        'system_ckpt':'/workspace/dabs/exp/models/traffic_80_budget=0.005_2023-01-25_10:50:22/model.ckpt',
-        'num_views': 3,
-        'threat_model_name': 'stncnn_80%',
-        'thresh':0.005,
-        'threat_model_path': traffic_paths['stncnn_80%'],
-    }
-}
+# run_config={
+#     'dataset' : 'traffic',
+#     'system_for_dataset':'/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt',
+#     # 'system_for_dataset':'/workspace/dabs/exp/models/traffic_80_budget=0.005_2023-01-25_10:50:22/model.ckpt',
+#     'threat_model_name': 'stncnn',
+#     'threat_model_path': traffic_paths['stncnn'],
+#     'attack':'vm',
+#     # 'attack':'advgan',
+#     # 'attack':'fgsm',
+#     'attack_config':{
+#         'dataset_name': 'traffic',
+#         # 'system_ckpt':'/workspace/dabs/exp/models/traffic_budget_budget=0.005/model.ckpt',
+#         'system_ckpt':'/workspace/dabs/exp/models/traffic_80_budget=0.005_2023-01-25_10:50:22/model.ckpt',
+#         'num_views': 3,
+#         'threat_model_name': 'stncnn_80%',
+#         'thresh':0.005,
+#         'threat_model_path': traffic_paths['stncnn_80%'],
+#     }
+# }
 
 birds_paths ={
     "resnet18": '/workspace/cubirds/resnet18-224.pt',
@@ -215,26 +224,26 @@ birds_paths ={
 }
 
 
-# run_config={
-#     'dataset' : 'birds',
-#     'system_for_dataset':'/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt',
-#     'system_for_dataset':'/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt',
-#     'threat_model_name': 'resnet18_80%',
-#     'threat_model_path': birds_paths['resnet18_80%'],
-#     # 'attack':'vm',
-#     # 'attack':'advgan',
-#     'attack':'fgsm',
-#     'attack_config':{
-        # 'dataset_name': 'birds',
+run_config={
+    'dataset' : 'birds',
+    'system_for_dataset':'/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt',
+    # 'system_for_dataset':'/workspace/dabs/exp/models/birds_80_budget=0.025_2023-01-25_15:25:43/model.ckpt',
+    'threat_model_name': 'resnet18',
+    'threat_model_path': birds_paths['resnet18'],
+    'attack':'vm',
+    # 'attack':'advgan',
+    # 'attack':'fgsm',
+    'attack_config':{
+        'dataset_name': 'birds',
         # 'system_ckpt':'/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt',
-        # 'system_ckpt':'/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt',
-#         'num_views': 3,
-#         'threat_model_name': 'resnet18_80%',
-#         'thresh':0.025,
-#         'threat_model_path': birds_paths['resnet18_80%'],
-#     }
+        'system_ckpt':'/workspace/dabs/exp/models/birds_80_budget=0.025_2023-01-25_15:25:43/model.ckpt',
+        'num_views': 3,
+        'threat_model_name': 'resnet18_80%',
+        'thresh':0.025,
+        'threat_model_path': birds_paths['resnet18_80%'],
+    }
     
-# }
+}
 
 
 
@@ -243,23 +252,23 @@ cifar_paths ={
     "resnet50w": '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet50w_cifar10.pth.tar',
 }
 
-run_config={
-    'dataset' : 'cifar10',
-    'system_for_dataset':'/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt',
-    'threat_model_name': 'resnet50w',
-    'threat_model_path': cifar_paths['resnet50w'],
-    # 'attack':'vm',
-    # 'attack':'advgan',
-    'attack':'fgsm',
-    'attack_config':{
-        'dataset_name': 'cifar10',
-        'system_ckpt':'/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt',
-        'num_views': 3,
-        'threat_model_name': 'resnet34',
-        'thresh':0.03,
-        'threat_model_path': cifar_paths['resnet34'],
-    }
-}
+# run_config={
+#     'dataset' : 'cifar10',
+#     'system_for_dataset':'/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt',
+#     'threat_model_name': 'resnet50w',
+#     'threat_model_path': cifar_paths['resnet50w'],
+#     # 'attack':'vm',
+#     # 'attack':'advgan',
+#     'attack':'fgsm',
+#     'attack_config':{
+#         'dataset_name': 'cifar10',
+#         'system_ckpt':'/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt',
+#         'num_views': 3,
+#         'threat_model_name': 'resnet34',
+#         'thresh':0.03,
+#         'threat_model_path': cifar_paths['resnet34'],
+#     }
+# }
 
 
 
@@ -314,14 +323,19 @@ acc = (df['pred'] == df['label']).mean()
 print(f'Original Acc={100*acc:.2f}% , Adv Acc={100*adv_acc:.2f}% (ASR={100*(1-adv_acc):.2f}) , Consistency Acc={100*consistency_acc:.2f}(ASR={100*(1-consistency_acc):.2f})')
 print(run_config)
 
-# mask_20=(df['pred']==0)|(df['pred']==5)
 
-# consistency_acc_20 = (df['pred'] == df['adv_pred'])[mask_20].mean()
-# adv_acc_20 = (df['label'] == df['adv_pred'])[mask_20].mean()
-# acc_20 = (df['pred'] == df['label'])[mask_20].mean()
-# print(f'Original Acc={100*acc_20:.2f}% , Adv Acc={100*adv_acc_20:.2f}% (ASR={100*(1-adv_acc_20):.2f}) , Consistency Acc={100*consistency_acc_20:.2f}(ASR={100*(1-consistency_acc_20):.2f})')
+# exit()
+# classes_to_mask = [23,36,24,17,4,31,42,10] # traffic
+# classes_to_mask = [0,5] # mnist
+classes_to_mask = [51, 4, 155, 159, 116, 197, 157, 73, 56, 23, 2, 102, 22, 50, 119, 5, 111, 88, 100, 71, 44, 59, 84, 11, 27, 70, 46, 175, 148, 91, 189, 8, 32, 66, 183, 188, 194, 38, 81, 104] # birds
+mask_20=df['pred'].isin(classes_to_mask)
 
-# consistency_acc_80 = (df['pred'] == df['adv_pred'])[~mask_20].mean()
-# adv_acc_80 = (df['label'] == df['adv_pred'])[~mask_20].mean()
-# acc_80 = (df['pred'] == df['label'])[~mask_20].mean()
-# print(f'Original Acc={100*acc_80:.2f}% , Adv Acc={100*adv_acc_80:.2f}% (ASR={100*(1-adv_acc_80):.2f}) , Consistency Acc={100*consistency_acc_80:.2f}(ASR={100*(1-consistency_acc_80):.2f})')
+consistency_acc_20 = (df['pred'] == df['adv_pred'])[mask_20].mean()
+adv_acc_20 = (df['label'] == df['adv_pred'])[mask_20].mean()
+acc_20 = (df['pred'] == df['label'])[mask_20].mean()
+print(f'Original Acc={100*acc_20:.2f}% , Adv Acc={100*adv_acc_20:.2f}% (ASR={100*(1-adv_acc_20):.2f}) , Consistency Acc={100*consistency_acc_20:.2f}(ASR={100*(1-consistency_acc_20):.2f})')
+
+consistency_acc_80 = (df['pred'] == df['adv_pred'])[~mask_20].mean()
+adv_acc_80 = (df['label'] == df['adv_pred'])[~mask_20].mean()
+acc_80 = (df['pred'] == df['label'])[~mask_20].mean()
+print(f'Original Acc={100*acc_80:.2f}% , Adv Acc={100*adv_acc_80:.2f}% (ASR={100*(1-adv_acc_80):.2f}) , Consistency Acc={100*consistency_acc_80:.2f}(ASR={100*(1-consistency_acc_80):.2f})')
