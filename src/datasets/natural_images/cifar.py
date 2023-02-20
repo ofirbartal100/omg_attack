@@ -4,7 +4,7 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import datasets, transforms
-
+import numpy as np
 from dabs.src.datasets.specs import Input2dSpec
 
 
@@ -87,3 +87,41 @@ class CIFAR10Small(CIFAR10):
                 in_channels=CIFAR10Small.IN_CHANNELS,
             ),
         ]
+
+
+class CIFAR10Small80(CIFAR10Small):
+    classes_to_mask = [1,6]
+    NUM_CLASSES = 10 - len(classes_to_mask)
+    
+    def __init__(self, base_root: str, download: bool = False, train: bool = True) -> None:
+        super().__init__( base_root, download, train)
+
+        self.root = os.path.join(base_root, 'natural_images', 'CIFAR10')
+        if not os.path.isdir(self.root):
+            os.makedirs(self.root)
+        self.transforms = transforms.Compose(
+            [
+                transforms.Resize(self.INPUT_SIZE),
+                transforms.CenterCrop(self.INPUT_SIZE),
+                transforms.ToTensor(),
+            ]
+        )
+        self.dataset = datasets.cifar.CIFAR10(
+            root=self.root,
+            train=train,
+            download=download,
+        )
+
+        if CIFAR10Small80.classes_to_mask is not None:
+            # 80% classes
+            targets = np.array(self.dataset.targets)
+            maskout = [ targets == ctmo for ctmo in CIFAR10Small80.classes_to_mask]
+            maskout = ~ (np.stack(maskout,axis=0).sum(0).astype(bool))
+            targets = targets[maskout]
+            self.dataset.data = self.dataset.data[maskout]
+            shift = np.stack([ targets > ctmo for ctmo in CIFAR10Small80.classes_to_mask],axis=0).sum(0)
+            self.dataset.targets = (targets - shift).tolist()
+
+    @staticmethod
+    def num_classes():
+        return CIFAR10Small80.NUM_CLASSES

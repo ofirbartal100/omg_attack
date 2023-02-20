@@ -49,9 +49,12 @@ def get_model(config: DictConfig, **kwargs):
     elif "mnist_model" in config.model.name:
         model_class = mnist_model.MnistModel
         dataset_class = mnist.MNIST
-    elif "cifar_model" in config.model.name:
+    elif "cifar_model" == config.model.name:
         model_class = cifar_model.CifarModel
         dataset_class = cifar.CIFAR10Small
+    elif "cifar_model_80" == config.model.name:
+        model_class = cifar_model.CifarModel
+        dataset_class = cifar.CIFAR10Small80
     else:
         raise ValueError(f'Encoder {config.model.name} doesn\'t exist.')
     # Retrieve the dataset-specific params.

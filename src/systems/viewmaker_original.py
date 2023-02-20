@@ -1387,12 +1387,12 @@ class CIFARViewMaker(BirdsViewMaker):
     def training_epoch_end(self, outputs) -> None:
         mean_gen_acc = np.mean(list(chain(*[ [oo['gen_acc'].item() for oo in o] for o in outputs])))
         mean_enc_acc = np.mean(list(chain(*[ [oo['encoder_acc'].item() for oo in o] for o in outputs])))
-        if mean_gen_acc<0.1:
-            self.config.enc_every = 2
-            self.config.gen_every = 1
-        elif mean_enc_acc>0.8:
-            self.config.enc_every = 1
-            self.config.gen_every = 3
-        else:
-            self.config.enc_every = 1
-            self.config.gen_every = 1
+        # if mean_gen_acc<0.1:
+        #     self.config.enc_every = 2
+        #     self.config.gen_every = 1
+        # elif mean_enc_acc>0.8:
+        #     self.config.enc_every = 1
+        #     self.config.gen_every = 3
+        # else:
+            # self.config.enc_every = 1
+            # self.config.gen_every = 1

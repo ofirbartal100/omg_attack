@@ -7,9 +7,10 @@ import torch
 
 # pretrain_original
 # @hydra.main(config_path='conf', config_name='mnist')
-# @hydra.main(config_path='conf', config_name='cifar')
+@hydra.main(config_path='conf', config_name='cifar')
+# @hydra.main(config_path='conf', config_name='cifar_80')
 # @hydra.main(config_path='conf', config_name='traffic_80')
-@hydra.main(config_path='conf', config_name='birds_80')
+# @hydra.main(config_path='conf', config_name='birds_80')
 def run(config):
     # Deferred imports for faster tab completion
     import os
@@ -102,7 +103,7 @@ def run(config):
         gpus=config.gpus,  # GPU indices
         max_steps=config.trainer.max_steps,
         min_steps=config.trainer.max_steps,
-        # resume_from_checkpoint= None ,
+        resume_from_checkpoint= config.trainer.resume_from_checkpoint ,
         val_check_interval=config.trainer.val_check_interval,
         limit_val_batches=config.trainer.limit_val_batches,
         callbacks=callbacks,

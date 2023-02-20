@@ -1,0 +1,4 @@
+name: cifar_model
+kwargs:
+  cifar_model_path: '/workspace/adversarial_examples_pytorch/adv_gan_80_to_20/saved/target_models/best_resnet34_cifar10.pth.tar'
+  vgg_config_path: none

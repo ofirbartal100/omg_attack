@@ -138,7 +138,10 @@ Original Acc=89.60% , Adv Acc=61.15% (ASR=38.85) , Consistency Acc=66.59(ASR=33.
 
 
 
-CIFAR10 ASR
+CIFAR10 Resnet34 ASR
+
+Original Acc=93.64% , Adv Acc=71.61% (ASR=28.39) , Consistency Acc=73.48(ASR=26.52)
+{'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'threat_model_name': 'resnet34', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'attack': 'vm', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar'}}
 
 Original Acc=93.64% , Adv Acc=86.21% (ASR=13.79) , Consistency Acc=88.46(ASR=11.54)
 {'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'threat_model_name': 'resnet34', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'attack': 'advgan', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar'}}
@@ -147,7 +150,25 @@ Original Acc=93.64% , Adv Acc=9.08% (ASR=90.92) , Consistency Acc=14.50(ASR=85.5
 {'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'threat_model_name': 'resnet34', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'attack': 'fgsm', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'threat_model': ResNet(
 
 
+CIFAR10 Resnet34 Defended
+
+Original Acc=88.55% , Adv Acc=82.37% (ASR=17.63) , Consistency Acc=87.73(ASR=12.27)
+{'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'threat_model_name': 'resnet34_defended', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_adv_resnet34_cifar10.pth.tar', 'attack': 'vm', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar'}}
+
+Original Acc=88.55% , Adv Acc=85.57% (ASR=14.43) , Consistency Acc=91.38(ASR=8.62)
+{'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'threat_model_name': 'resnet34_defended', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_adv_resnet34_cifar10.pth.tar', 'attack': 'advgan', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar'}}
+
+Original Acc=88.55% , Adv Acc=82.36% (ASR=17.64) , Consistency Acc=90.99(ASR=9.01)
+{'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'threat_model_name': 'resnet34_defended', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_adv_resnet34_cifar10.pth.tar', 'attack': 'fgsm', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'threat_model': ResNet(
+
+
 CIFAR10 Resnet34 -> Resnet50 Wide
+
+Original Acc=94.81% , Adv Acc=79.09% (ASR=20.91) , Consistency Acc=80.88(ASR=19.12)
+{'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'threat_model_name': 'resnet50w', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet50w_cifar10.pth.tar', 'attack': 'vm', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar'}}
+
+Original Acc=94.81% , Adv Acc=88.26% (ASR=11.74) , Consistency Acc=90.21(ASR=9.79)
+{'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'threat_model_name': 'resnet50w', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet50w_cifar10.pth.tar', 'attack': 'advgan', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar'}}
 
 Original Acc=94.81% , Adv Acc=44.14% (ASR=55.86) , Consistency Acc=47.84(ASR=52.16)
 {'dataset': 'cifar10', 'system_for_dataset': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'threat_model_name': 'resnet50w', 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet50w_cifar10.pth.tar', 'attack': 'fgsm', 'attack_config': {'dataset_name': 'cifar10', 'system_ckpt': '/workspace/dabs/exp/models/cifar_dyn_2023-01-24_06:43:04/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet34', 'thresh': 0.03, 'threat_model_path': '/workspace/adversarial_examples_pytorch/adv_gan/saved/target_models/best_resnet34_cifar10.pth.tar', 'threat_model': ResNet(
@@ -198,3 +219,23 @@ Original Acc=90.19% , Adv Acc=34.04% (ASR=65.96) , Consistency Acc=34.90(ASR=65.
 {'dataset': 'birds', 'system_for_dataset': '/workspace/dabs/exp/models/birds_dyn_sweep_budget=0.025/model.ckpt', 'threat_model_name': 'resnet18', 'threat_model_path': '/workspace/cubirds/resnet18-224.pt', 'attack': 'vm', 'attack_config': {'dataset_name': 'birds', 'system_ckpt': '/workspace/dabs/exp/models/birds_80_budget=0.025_2023-01-25_15:25:43/model.ckpt', 'num_views': 3, 'threat_model_name': 'resnet18_80%', 'thresh': 0.025, 'threat_model_path': '/workspace/cubirds/resnet18-80p.pt'}}
 Original Acc=91.35% , Adv Acc=29.35% (ASR=70.65) , Consistency Acc=29.91(ASR=70.09)
 Original Acc=89.91% , Adv Acc=35.17% (ASR=64.83) , Consistency Acc=36.10(ASR=63.90)
+
+
+
+
+Budget Graph
+
+Birds
+Original Acc=90.19% , Adv Acc=89.92% (ASR=10.08) , Consistency Acc=98.78(ASR=1.22) 0.001
+Original Acc=90.19% , Adv Acc=90.01% (ASR=9.99) , Consistency Acc=99.11(ASR=0.89)  0.005
+Original Acc=90.19% , Adv Acc=87.32% (ASR=12.68) , Consistency Acc=93.59(ASR=6.41) 0.015
+Original Acc=90.19% , Adv Acc=50.96% (ASR=49.04) , Consistency Acc=52.88(ASR=47.12) 0.025
+Original Acc=90.19% , Adv Acc=64.17% (ASR=35.83) , Consistency Acc=66.56(ASR=33.44) 0.035
+
+
+Traffic Signs
+Original Acc=100.00% , Adv Acc=81.18% (ASR=18.82) , Consistency Acc=81.18(ASR=18.82) 0.001
+Original Acc=100.00% , Adv Acc=41.54% (ASR=58.46) , Consistency Acc=41.54(ASR=58.46) 0.005
+Original Acc=100.00% , Adv Acc=32.50% (ASR=67.50) , Consistency Acc=32.50(ASR=67.50) 0.015
+Original Acc=100.00% , Adv Acc=6.80% (ASR=93.20) , Consistency Acc=6.80(ASR=93.20) 0.025
+Original Acc=100.00% , Adv Acc=1.73% (ASR=98.27) , Consistency Acc=1.73(ASR=98.27) 0.035
