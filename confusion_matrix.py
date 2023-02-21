@@ -50,7 +50,7 @@ def load_attack_fun(attack_type,attack_dict):
         else:
             base = '/workspace/adversarial_examples_pytorch/adv_gan/'
 
-        checkpoint_path_G = os.path.join(base,'saved', 'generators', f'bound_{thresh}', checkpoint_name_G)
+        checkpoint_path_G = os.path.join(base,'saved', 'generators', f'bound_{np.floor(100*thresh)/100.0}', checkpoint_name_G)
         checkpoint_G = torch.load(checkpoint_path_G, map_location='cpu')
         G.load_state_dict(checkpoint_G['state_dict'])
         G.eval().cuda()
@@ -60,7 +60,7 @@ def load_attack_fun(attack_type,attack_dict):
         #     transform = lambda x: x
 
         def advgan_attack(x):
-            pert = G(x).data.clamp(min=-thresh, max=thresh)
+            pert = G(x).clamp(min=-thresh, max=thresh)
             x_adv = x + pert
             x_adv = x_adv.clamp(min=0, max=1)
             # views1 = system.normalize(x_adv)
@@ -260,8 +260,8 @@ cifar_paths ={
 run_config={
     'dataset' : 'cifar10',
     'system_for_dataset':'/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt',
-    'threat_model_name': 'resnet34',
-    'threat_model_path': cifar_paths['resnet34'],
+    'threat_model_name': 'resnet50w',
+    'threat_model_path': cifar_paths['resnet50w'],
     # 'attack':'vm',
     'attack':'advgan',
     # 'attack':'fgsm',
@@ -270,7 +270,7 @@ run_config={
         'system_ckpt':'/workspace/dabs/exp/models/cifar_dyn_2023-01-29_09:38:19/model.ckpt',
         'num_views': 3,
         'threat_model_name': 'resnet34',
-        'thresh':0.03,
+        'thresh':0.035,
         'threat_model_path': cifar_paths['resnet34'],
     }
 }
