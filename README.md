@@ -2,11 +2,11 @@
 
 This repository contains the code for OMG-ATTACK, a self-supervised, computationally efficient, and transferable adversarial attack model.
 
-![image](https://github.com/ofirbartal100/dabs_viewmaker/assets/23661390/3908ce90-97fb-439d-838c-854b1cf20703)
+![image](https://github.com/ofirbartal100/omg_attack/assets/23661390/b6597a51-01ba-4054-88c9-0e15d0136dde)
 
-![image](https://github.com/ofirbartal100/dabs_viewmaker/assets/23661390/8fbcfad3-cf30-4116-be49-74f6e4dda81b)
+![image](https://github.com/ofirbartal100/omg_attack/assets/23661390/951881c5-a1a2-4c4d-ae68-311cf81389ad)
 
-![image](https://github.com/ofirbartal100/dabs_viewmaker/assets/23661390/200a9227-0fab-4faa-9089-7a511c7d206f)
+![image](https://github.com/ofirbartal100/omg_attack/assets/23661390/4054b176-4366-475a-a270-1655507e535a)
 
 
 
@@ -61,13 +61,13 @@ Below are results for algorithms trained on each dataset in DABS. The baseline p
 | GTSR    | 20.55        | 12.89       | 4.13          | 69.19     | 65.54    | **60.61**      |
 | CUB     | 31.11        | 24.21       | 24.42         | 66.98     | 63.90    | **70.09**      |
 
-![image](https://github.com/ofirbartal100/dabs_viewmaker/assets/23661390/e8414938-41b9-4569-ac1d-8f20d029b5b4)
+![image](https://github.com/ofirbartal100/omg_attack/assets/23661390/be42122d-c6b8-48b1-822f-d52dd8708f4e)
 
 ## Visual Results
 
-![image](https://github.com/ofirbartal100/dabs_viewmaker/assets/23661390/f9e57fab-3b89-4a4b-9511-bc60e15a4f5d)
+![image](https://github.com/ofirbartal100/omg_attack/assets/23661390/c0de1c38-3aee-4ded-915a-116b3ba227e1)
 
-![image](https://github.com/ofirbartal100/dabs_viewmaker/assets/23661390/1969dc39-2ebd-460e-99da-46a842eb03ad)
+![image](https://github.com/ofirbartal100/omg_attack/assets/23661390/ca568eb1-d159-4d99-972c-3aa21c9ed950)
 
-![image](https://github.com/ofirbartal100/dabs_viewmaker/assets/23661390/db471588-cfdf-4f72-ac39-6ff14af5a21f)
+![image](https://github.com/ofirbartal100/omg_attack/assets/23661390/f00cc534-9071-4c0d-abd9-716dc6adf2e7)
 
